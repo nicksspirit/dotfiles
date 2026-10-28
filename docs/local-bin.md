@@ -2,6 +2,8 @@
 
 The `local-bin` package stows user-owned helpers under `~/.local/bin/`.
 
+All command entry points in `local-bin/.local/bin/` are executable scripts.
+
 - `difft` wraps difftastic with inline display.
 - `gh-browser` opens browser URLs for `gh auth login`.
 - `mwt` manages sparse worktrees from a backend repository's `wt.yaml`; it requires `git` and `yq`.
