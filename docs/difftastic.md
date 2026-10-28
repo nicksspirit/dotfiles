@@ -2,15 +2,18 @@
 
 Structural diff tool that understands syntax. Used as the primary git diff driver.
 
-`scripts/setup-tools.sh` installs difftastic with Snap. Its binary is
-`/snap/bin/difftastic`.
+`scripts/setup-tools.sh` downloads the latest amd64 or arm64 Debian package from
+the [difftastic-debian GitHub releases](https://github.com/dariogriffo/difftastic-debian/releases)
+and installs it with `dpkg`. This free release-download route does not require
+Snap or the project's subscription-based apt repository. The package installs
+`/usr/bin/difft`.
 
 ## Local wrapper (`difft`)
 
 A wrapper script at `~/.local/bin/difft` (managed by the `local-bin` stow package)
-calls `difftastic --display inline "$@"`. This ensures `--display inline` is always
-active without needing to embed flags in git config (git passes positional args
-directly to `diff.external`, so flags can't be added there).
+calls `/usr/bin/difft --display inline "$@"`. This ensures `--display inline` is
+always active without needing to embed flags in git config (git passes positional
+args directly to `diff.external`, so flags can't be added there).
 
 Git config and aliases reference `difft` (the wrapper), not `difftastic` directly.
 
@@ -48,6 +51,4 @@ git diff --no-ext-diff
 
 ## Lazygit
 
-`externalDiffCommand: /snap/bin/difftastic --color=always` is present in
-`~/.config/lazygit/config.yml` but currently commented out. Uncomment to enable
-difftastic diffs inside lazygit.
+Lazygit uses the `difft` wrapper from `PATH` for structural diffs.

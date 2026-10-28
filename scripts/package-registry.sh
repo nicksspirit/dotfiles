@@ -319,8 +319,10 @@ registry_load_unit() {
 
     difftastic)
       REGISTRY_ID=difftastic
-      REGISTRY_INSTALL_METHOD=snap
-      REGISTRY_INSTALL_NAMES=(difftastic)
+      REGISTRY_INSTALL_METHOD=github
+      REGISTRY_COMMAND=difft
+      REGISTRY_DOWNLOAD_METHOD=latest-deb
+      REGISTRY_URL=https://api.github.com/repos/dariogriffo/difftastic-debian/releases/latest
       ;;
 
     aws-cli)

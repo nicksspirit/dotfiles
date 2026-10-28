@@ -1,2 +1,2 @@
 #!/usr/bin/env sh
-exec difftastic --display inline "$@"
+exec /usr/bin/difft --display inline "$@"

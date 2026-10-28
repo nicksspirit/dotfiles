@@ -87,7 +87,7 @@ KEYCHAIN_VERSION="3.0.0_beta1"
 # Each entry is a pipe-delimited string:  "cmd|method|url"  or  "cmd|method|url|extra"
 #
 #   cmd    — the binary name (used for the idempotency check and symlink target)
-#   method — one of: deb | tarball | bin
+#   method — one of: deb | tarball | bin | zipbin | latest-bin | latest-deb | direct
 #   url    — direct download URL for the release artifact
 #   extra  — method-specific detail (see below)
 #
@@ -122,6 +122,10 @@ KEYCHAIN_VERSION="3.0.0_beta1"
 #   latest-bin Downloads the latest GitHub release asset for a platform-specific
 #              binary and extracts it to ~/.local/bin/<cmd>.
 #              extra: asset name prefix (the architecture suffix is appended).
+#
+#   latest-deb Downloads and installs the latest GitHub release .deb matching the
+#              host architecture. The package is checked with dpkg-query rather
+#              than command -v because a Stow-managed wrapper may shadow its binary.
 #
 
 ## [install]
@@ -259,6 +263,37 @@ for entry in "${GITHUB_INSTALLS[@]}"; do
         fi
       else
         status skip "$cmd already installed"
+      fi
+      ;;
+
+    latest-deb)
+      if should_reinstall_tools || ! apt_package_installed difftastic; then
+        sublog "$cmd"
+        case "$(uname -m)" in
+          x86_64) difftastic_arch=amd64 ;;
+          aarch64) difftastic_arch=arm64 ;;
+          *) die "unsupported architecture for difftastic: $(uname -m)" ;;
+        esac
+        if is_dry_run; then
+          status get "$url"
+          status plan "download latest difftastic .deb for $difftastic_arch and install with sudo dpkg -i"
+        else
+          make_temp_dir "setup-tools-${cmd}" tmp_dir
+          status get "$url"
+          mapfile -t difftastic_assets < <(
+            curl -fsSL "$url" \
+              | grep -Eo "\"browser_download_url\": *\"[^\"]*difftastic_[^\"]*_${difftastic_arch}\\.deb\"" \
+              | sed -E 's/^"browser_download_url": *"([^"]*)".*/\1/'
+          )
+          if (("${#difftastic_assets[@]}" != 1)); then
+            die "expected one difftastic .deb asset for $difftastic_arch in latest release, found ${#difftastic_assets[@]}"
+          fi
+          curl -fsSL -o "$tmp_dir/difftastic.deb" "${difftastic_assets[0]}"
+          status run "sudo dpkg -i $tmp_dir/difftastic.deb"
+          sudo dpkg -i "$tmp_dir/difftastic.deb"
+        fi
+      else
+        status skip "difftastic package already installed"
       fi
       ;;
 
