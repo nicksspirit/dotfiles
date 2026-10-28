@@ -7,6 +7,9 @@ Treemux runs a separate Neovim sidebar process, independent of the main LazyVim 
 
 `~/.tmux.conf` selects `nvim-tree` and the Python environment created by `scripts/setup-treemux.sh` at `~/.local/share/treemux-venv/`.
 
+If TPM reports a Treemux download failure, check `~/.tmux/plugins/treemux` for
+a dangling symlink; remove the link itself before retrying the install.
+
 ## Keybindings
 
 `prefix` is `Ctrl-a` in this tmux configuration. The sidebar is a Neovim
