@@ -13,6 +13,7 @@
 #   REGISTRY_ALIASES             accepted alternate --package IDs
 #   REGISTRY_INSTALL_METHOD      apt, github, snap, installer, or empty
 #   REGISTRY_INSTALL_NAMES       apt distribution package names
+#   REGISTRY_APT_DEPENDENCIES    additional apt packages required by the unit
 #   REGISTRY_COMMAND             installed command used for idempotence
 #   REGISTRY_DOWNLOAD_METHOD     setup-tools GitHub method
 #   REGISTRY_URL                 release API, artifact, or installer URL
@@ -78,6 +79,7 @@ registry_reset_unit() {
   REGISTRY_ALIASES=()
   REGISTRY_INSTALL_METHOD=
   REGISTRY_INSTALL_NAMES=()
+  REGISTRY_APT_DEPENDENCIES=()
   REGISTRY_COMMAND=
   REGISTRY_DOWNLOAD_METHOD=
   REGISTRY_URL=
@@ -273,6 +275,7 @@ registry_load_unit() {
       REGISTRY_ID=nvim
       REGISTRY_ALIASES=(neovim)
       REGISTRY_INSTALL_METHOD=github
+      REGISTRY_APT_DEPENDENCIES=(xclip)
       REGISTRY_COMMAND=nvim
       REGISTRY_DOWNLOAD_METHOD=tarball
       REGISTRY_URL=https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz

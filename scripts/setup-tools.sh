@@ -73,6 +73,7 @@ while read -r registry_id; do
       INSTALLER_TOOLS+=("$REGISTRY_COMMAND|$REGISTRY_URL|$REGISTRY_INSTALL_DESTINATION|$REGISTRY_INSTALL_SHELL|${REGISTRY_INSTALL_ARGS[*]-}")
       ;;
   esac
+  APT_PACKAGES+=("${REGISTRY_APT_DEPENDENCIES[@]}")
 done < <(registry_selected_ids)
 unique_apt_packages=()
 while IFS= read -r pkg; do

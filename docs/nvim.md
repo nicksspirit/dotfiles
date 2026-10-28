@@ -7,7 +7,7 @@ The `nvim` package manages the LazyVim-style configuration under `~/.config/nvim
 ## Current configuration
 
 - LazyVim imports local plugins; the configured colorscheme is Nord with a local transparent-background override.
-- Options enable truecolor, relative line numbers, two-space indentation, wrapping, mouse support, and clipboard integration.
+- Options enable truecolor, relative line numbers, two-space indentation, wrapping, mouse support, and clipboard integration. The `nvim` bootstrap unit installs `xclip` so Neovim's `unnamedplus` clipboard provider is available for yanks.
 - Folding uses Tree-sitter-based `foldexpr`, starts fully unfolded (`foldlevelstart = 99`), and exposes quick fold-level/fold-method commands through the Legendary command palette.
 - `legendary.nvim` provides the `<leader>p` command palette and `render-markdown.nvim` provides Markdown rendering.
 - Plugin versions are locked locally at `stdpath("state")/lazy-lock.json`; separate machines can update plugins without changing this repository.
