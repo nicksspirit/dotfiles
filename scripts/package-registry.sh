@@ -28,7 +28,6 @@ REGISTRY_UNIT_IDS=(
   __core__
   bootstrap-prerequisites
   bash
-  bash-completion
   git
   curl
   bat
@@ -120,13 +119,6 @@ registry_load_unit() {
       REGISTRY_INSTALL_METHOD=apt
       REGISTRY_INSTALL_NAMES=(bash)
       REGISTRY_STOW_PACKAGE=bash
-      ;;
-
-    bash-completion)
-      REGISTRY_ID=bash-completion
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(bash-completion)
-      REGISTRY_STOW_PACKAGE=bash-completions
       ;;
 
     git)

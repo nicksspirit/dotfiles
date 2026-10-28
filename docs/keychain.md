@@ -12,7 +12,6 @@ This is separate from the WSL 1Password bridge flow documented in
 
 - `~/.bashrc` — shell startup eval block
 - `~/.keychain/` — runtime env files written by keychain per hostname
-- `~/.local/share/bash-completion/completions/keychain` — bash completion (stow-tracked)
 - `~/.local/bin/keychain` — must be on `PATH` before Bash reaches the SSH block
 
 ## Current state
@@ -52,8 +51,3 @@ lockwait = 5
 [agent.ssh]
 args = -t 3600          # expire keys after 1 hour
 ```
-
-## Bash completion
-
-Completion file is from the v2 release (pinned commit), stow-tracked in `bash-completions/`.
-May need updating when keychain v3 ships a stable release with its own completion.
