@@ -110,15 +110,26 @@ export DRY_RUN
 export ADOPT
 export OVERWRITE
 export REINSTALL_TOOLS
-export BOOTSTRAP_PACKAGES="${BOOTSTRAP_PACKAGES[*]}"
+export BOOTSTRAP_PACKAGES="${BOOTSTRAP_PACKAGES[*]-}"
 selected_packages="$BOOTSTRAP_PACKAGES"
 
 if bootstrap_package_mode; then
-  scripts=(
-    setup-tools.sh
-    setup-stow.sh
-    setup-pi.sh
-  )
+  scripts=(setup-tools.sh setup-stow.sh)
+  if bootstrap_package_selected micro; then
+    scripts+=(setup-micro.sh)
+  fi
+  if bootstrap_package_selected tmux; then
+    scripts+=(setup-tmux.sh)
+  fi
+  if bootstrap_package_selected treemux; then
+    scripts+=(setup-treemux.sh)
+  fi
+  if bootstrap_package_selected nvim; then
+    scripts+=(setup-nvim.sh)
+  fi
+  if bootstrap_package_selected pi; then
+    scripts+=(setup-pi.sh)
+  fi
 else
   scripts=(
     setup-wsl.sh

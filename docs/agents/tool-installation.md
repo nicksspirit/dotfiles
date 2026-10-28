@@ -3,6 +3,7 @@
 Register every new tool in `scripts/package-registry.sh` so new machines receive it. Keep the installation implementations in `scripts/setup-tools.sh`; the setup script materializes selected registry records into its method loops.
 
 - apt, GitHub release, Snap, and installer metadata belong in the registry.
+- Host/toolchain prerequisites belong in the `bootstrap-prerequisites` unit. When selecting packages, include the prerequisite units required by those selections.
 - Keep canonical bootstrap IDs distinct from command/distribution names; add aliases there.
 - Stow ownership and per-package options also belong in the registry.
 - Git clones and generated plugin content belong in `bootstrap.sh` or the relevant setup phase.

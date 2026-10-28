@@ -23,17 +23,6 @@
 # Credentials & Security
 #
 
-[credential "https://github.com"]
-    helper = 
-    helper = !/usr/bin/gh auth git-credential
-
-[credential "https://gist.github.com"]
-    helper = 
-    helper = !/usr/bin/gh auth git-credential
-
-[gpg "ssh"]
-    program = "/mnt/c/Users/nmuoh/AppData/Local/Microsoft/WindowsApps/op-ssh-sign-wsl.exe"
-
 #
 # Diff & Merge Tools
 #
@@ -85,6 +74,3 @@
 #
 # Maintenance
 #
-
-[maintenance]
-    repo = /home/nmuoh/Developer/_SketchUp/sbd-legionrepo-git

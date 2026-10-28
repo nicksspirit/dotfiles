@@ -9,6 +9,7 @@ The `tmux` package manages `~/.tmux.conf` and configures TPM plugins.
 - The status bar combines Nord styling, prefix highlighting, CPU/MEM metrics, and tmux-agent-indicator session markers (numbered icons identify idle sessions).
 - `tmux-menus` opens a popup menu with `prefix + \\`; `prefix + Ctrl-Y` opens Lazygit and `prefix + Ctrl-T` opens a shell popup.
 - `tmux-fzf` replaces `prefix + f` with its selector.
+- The tmux-fzf plugin requires `fzf`; select `fzf` with tmux, and include `bootstrap-prerequisites` for configured plugin build/runtime dependencies.
 - Copy mode uses Vim keys: `Space` starts selection, `y` copies and exits, and `q` exits.
 
 ## Layout keys

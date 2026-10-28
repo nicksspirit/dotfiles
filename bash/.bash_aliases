@@ -1,9 +1,4 @@
 #
-# difftastic
-#
-alias difft='/snap/bin/difftastic'
-
-#
 # bat
 #
 alias bat='batcat'

@@ -43,9 +43,13 @@ export DRY_RUN
 log "stow packages"
 # package selection is exported by bootstrap.sh before this subprocess starts.
 repo_root="$(bootstrap_root)"
-mapfile -t stow_records < <(registry_stow_packages)
+stow_records=()
+while IFS= read -r record; do
+  stow_records+=("$record")
+done < <(registry_stow_packages)
 packages=()
-for record in "${stow_records[@]}"; do
+for record in "${stow_records[@]-}"; do
+  [[ -n "$record" ]] || continue
   IFS='|' read -r _stow_package _stow_args <<< "$record"
   packages+=("$_stow_package")
 done
@@ -86,7 +90,8 @@ remove_overwrite_conflicts() {
   local source_resolved
   local target_resolved
 
-  for package in "${packages[@]}"; do
+  for package in "${packages[@]-}"; do
+    [[ -n "$package" ]] || continue
     while IFS= read -r -d '' source; do
       package_rel=${source#"$repo_root/$package/"}
       target="$HOME/$package_rel"
@@ -157,7 +162,8 @@ if bootstrap_package_selected treemux; then
   remove_matching_treemux_target
 fi
 
-for record in "${stow_records[@]}"; do
+for record in "${stow_records[@]-}"; do
+  [[ -n "$record" ]] || continue
   IFS='|' read -r package package_args <<< "$record"
   package_stow_args=("${stow_args[@]}")
   if [[ -n "$package_args" ]]; then

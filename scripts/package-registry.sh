@@ -26,6 +26,7 @@
 
 REGISTRY_UNIT_IDS=(
   __core__
+  bootstrap-prerequisites
   bash
   bash-completion
   git
@@ -106,10 +107,18 @@ registry_load_unit() {
       )
       ;;
 
+    bootstrap-prerequisites)
+      REGISTRY_ID=bootstrap-prerequisites
+      REGISTRY_INSTALL_METHOD=apt
+      REGISTRY_INSTALL_NAMES=(ca-certificates curl patch stow unzip build-essential ripgrep)
+      ;;
+
     # Stow-only unit: no installer metadata is needed.
     bash)
       REGISTRY_ID=bash
       REGISTRY_ALIASES=(shell)
+      REGISTRY_INSTALL_METHOD=apt
+      REGISTRY_INSTALL_NAMES=(bash)
       REGISTRY_STOW_PACKAGE=bash
       ;;
 
@@ -453,12 +462,14 @@ registry_resolve() {
       printf '%s\n' "$REGISTRY_ID"
       return 0
     fi
-    for alias in "${REGISTRY_ALIASES[@]}"; do
-      if [[ "$wanted" == "$alias" ]]; then
-        printf '%s\n' "$REGISTRY_ID"
-        return 0
-      fi
-    done
+    if [[ -n "${REGISTRY_ALIASES[*]-}" ]]; then
+      for alias in "${REGISTRY_ALIASES[@]}"; do
+        if [[ "$wanted" == "$alias" ]]; then
+          printf '%s\n' "$REGISTRY_ID"
+          return 0
+        fi
+      done
+    fi
   done
   return 1
 }
@@ -500,7 +511,7 @@ registry_stow_packages() {
   while read -r canonical_id; do
     registry_load_unit "$canonical_id" || return
     [[ -n "$REGISTRY_STOW_PACKAGE" ]] || continue
-    printf '%s|%s\n' "$REGISTRY_STOW_PACKAGE" "${REGISTRY_STOW_ARGS[*]}"
+    printf '%s|%s\n' "$REGISTRY_STOW_PACKAGE" "${REGISTRY_STOW_ARGS[*]-}"
   done < <(registry_selected_ids)
 }
 
@@ -510,7 +521,7 @@ registry_all_stow_packages() {
   for canonical_id in "${REGISTRY_UNIT_IDS[@]}"; do
     registry_load_unit "$canonical_id" || return
     [[ -n "$REGISTRY_STOW_PACKAGE" ]] || continue
-    printf '%s|%s|%s\n' "$REGISTRY_ID" "$REGISTRY_STOW_PACKAGE" "${REGISTRY_STOW_ARGS[*]}"
+    printf '%s|%s|%s\n' "$REGISTRY_ID" "$REGISTRY_STOW_PACKAGE" "${REGISTRY_STOW_ARGS[*]-}"
   done
 }
 
@@ -545,5 +556,5 @@ registry_stow_args() {
   canonical_id=$(registry_resolve "$1") || return 1
   registry_load_unit "$canonical_id" || return
   [[ -n "$REGISTRY_STOW_PACKAGE" ]] || return 1
-  printf '%s\n' "${REGISTRY_STOW_ARGS[*]}"
+  printf '%s\n' "${REGISTRY_STOW_ARGS[*]-}"
 }

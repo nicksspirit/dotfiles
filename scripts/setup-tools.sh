@@ -67,14 +67,18 @@ while read -r registry_id; do
       GITHUB_INSTALLS+=("$REGISTRY_COMMAND|$REGISTRY_DOWNLOAD_METHOD|$REGISTRY_URL|$REGISTRY_DOWNLOAD_DETAIL")
       ;;
     snap)
-      SNAP_PACKAGES+=("${REGISTRY_INSTALL_NAMES[0]}|${REGISTRY_INSTALL_ARGS[*]}")
+      SNAP_PACKAGES+=("${REGISTRY_INSTALL_NAMES[0]}|${REGISTRY_INSTALL_ARGS[*]-}")
       ;;
     installer)
-      INSTALLER_TOOLS+=("$REGISTRY_COMMAND|$REGISTRY_URL|$REGISTRY_INSTALL_DESTINATION|$REGISTRY_INSTALL_SHELL|${REGISTRY_INSTALL_ARGS[*]}")
+      INSTALLER_TOOLS+=("$REGISTRY_COMMAND|$REGISTRY_URL|$REGISTRY_INSTALL_DESTINATION|$REGISTRY_INSTALL_SHELL|${REGISTRY_INSTALL_ARGS[*]-}")
       ;;
   esac
 done < <(registry_selected_ids)
-mapfile -t APT_PACKAGES < <(printf '%s\n' "${APT_PACKAGES[@]}" | awk 'NF && !seen[$0]++')
+unique_apt_packages=()
+while IFS= read -r pkg; do
+  [[ -n "$pkg" ]] && unique_apt_packages+=("$pkg")
+done < <(printf '%s\n' "${APT_PACKAGES[@]}" | awk 'NF && !seen[$0]++')
+APT_PACKAGES=("${unique_apt_packages[@]}")
 
 ## [github release versions]
 # Update the version variable here when upgrading a tool.
@@ -132,7 +136,8 @@ KEYCHAIN_VERSION="3.0.0_beta1"
 
 log "apt packages"
 apt_targets=()
-for pkg in "${APT_PACKAGES[@]}"; do
+for pkg in "${APT_PACKAGES[@]-}"; do
+  [[ -n "$pkg" ]] || continue
   if should_reinstall_tools || ! apt_package_installed "$pkg"; then
     apt_targets+=("$pkg")
   else
@@ -154,7 +159,8 @@ if ((${#GITHUB_INSTALLS[@]})); then
   run mkdir -p "$HOME/.local/bin" "$HOME/.local/opt"
 fi
 
-for entry in "${GITHUB_INSTALLS[@]}"; do
+for entry in "${GITHUB_INSTALLS[@]-}"; do
+  [[ -n "$entry" ]] || continue
   IFS='|' read -r cmd method url extra <<< "$entry"
   file="$(basename "$url")"
 
@@ -323,7 +329,8 @@ done
 # Skipped when: snap list <pkg> already succeeds.
 
 log "snap packages"
-for entry in "${SNAP_PACKAGES[@]}"; do
+for entry in "${SNAP_PACKAGES[@]-}"; do
+  [[ -n "$entry" ]] || continue
   IFS='|' read -r pkg flags <<< "$entry"
   if should_reinstall_tools || ! snap list "$pkg" >/dev/null 2>&1; then
     sublog "$pkg"
@@ -363,7 +370,8 @@ done
 # Skipped when: command -v <cmd> succeeds.
 
 log "installer scripts"
-for entry in "${INSTALLER_TOOLS[@]}"; do
+for entry in "${INSTALLER_TOOLS[@]-}"; do
+  [[ -n "$entry" ]] || continue
   IFS='|' read -r cmd url dest shell shell_args <<< "$entry"
   shell="${shell:-sh}"
   if ! bootstrap_package_selected "$cmd"; then

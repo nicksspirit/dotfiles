@@ -125,8 +125,6 @@ fi
 #
 export PATH="$HOME/.local/bin:$PATH"
 export MICRO_TRUECOLOR=1
-export WINHOME="/mnt/c/Users/nmuoh"
-export TMPDIR="/home/nmuoh/tmp"
 export FZF_TMUX_OPTS='-p80%,60%'
 
 # Prefer a browser helper that gh can launch directly.
@@ -169,9 +167,6 @@ if command -v zoxide >/dev/null 2>&1; then
   eval "$(zoxide init bash)"
 fi
 
-# Pi
-export PATH="/home/nmuoh/.local/share/fnm/node-versions/v24.18.0/installation/bin:$PATH"
-
 #
 # SSH
 #
@@ -185,4 +180,10 @@ export PATH="/home/nmuoh/.local/share/fnm/node-versions/v24.18.0/installation/bi
 # Load 1Password SSH agent bridge.
 if [ -f "$HOME/.1password/agent-bridge.sh" ]; then
   source "$HOME/.1password/agent-bridge.sh"
+fi
+
+# Machine-specific environment and PATH customizations live outside the repo.
+# Keep the shared config generic; host-specific overrides belong here.
+if [ -f "$HOME/.bashrc.local" ]; then
+  . "$HOME/.bashrc.local"
 fi
