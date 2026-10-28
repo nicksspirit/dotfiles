@@ -10,6 +10,9 @@ Treemux runs a separate Neovim sidebar process, independent of the main LazyVim 
 If TPM reports a Treemux download failure, check `~/.tmux/plugins/treemux` for
 a dangling symlink; remove the link itself before retrying the install.
 
+The main Neovim editor's Legendary palette (`<leader>p`) includes
+`TreemuxShortcuts`, which opens this guide in a floating Markdown window.
+
 ## Keybindings
 
 `prefix` is `Ctrl-a` in this tmux configuration. The sidebar is a Neovim
