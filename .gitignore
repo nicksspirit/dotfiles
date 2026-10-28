@@ -5,6 +5,7 @@
 **/.cache/
 **/.local/state/
 **/.local/share/
+**/lazy-lock.json
 
 # Agent workspace
 /.local/

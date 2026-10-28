@@ -3,6 +3,6 @@
 ^AGENTS\.md$
 ^bootstrap\.sh$
 ^\.gitignore$
+(^|/)lazy-lock\.json$
 ^docs/
 ^scripts/
-
