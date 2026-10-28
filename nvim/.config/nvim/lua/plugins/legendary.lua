@@ -61,7 +61,7 @@ return {
           "<C-s>",
           ":w<CR>",
           description = "Save file",
-          mode = { "n", "i", "v" },
+          mode = { "n", "x" },
         },
         {
           "<C-z>",
@@ -73,13 +73,7 @@ return {
           "<C-z>",
           "<Esc>u",
           description = "Undo",
-          mode = { "i" },
-        },
-        {
-          "<C-z>",
-          "<Esc>u",
-          description = "Undo",
-          mode = { "v" },
+          mode = { "x" },
         },
       },
     },
