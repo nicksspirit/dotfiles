@@ -7,6 +7,14 @@ __BOOTSTRAP_TRAPS_ENABLED=0
 # The registry is intentionally Bash-only so it works before bootstrap installs tools.
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/package-registry.sh"
 
+# Make user-local installs available to later setup phases and their idempotency checks.
+bootstrap_local_bin="$HOME/.local/bin"
+case ":${PATH:-}:" in
+  *":${bootstrap_local_bin}:"*) ;;
+  *) PATH="${bootstrap_local_bin}${PATH:+:$PATH}" ;;
+esac
+export PATH
+
 # Print the repository root based on this library's location.
 # Args: none.
 # Outputs: absolute repo path on stdout.

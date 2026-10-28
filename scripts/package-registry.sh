@@ -354,6 +354,8 @@ registry_load_unit() {
       REGISTRY_INSTALL_METHOD=installer
       REGISTRY_COMMAND=uv
       REGISTRY_URL=https://astral.sh/uv/install.sh
+      REGISTRY_INSTALL_SHELL=sh
+      REGISTRY_INSTALL_ARGS=(-s -- --quiet)
       ;;
 
     fnm)

@@ -77,8 +77,8 @@ done < <(registry_selected_ids)
 unique_apt_packages=()
 while IFS= read -r pkg; do
   [[ -n "$pkg" ]] && unique_apt_packages+=("$pkg")
-done < <(printf '%s\n' "${APT_PACKAGES[@]}" | awk 'NF && !seen[$0]++')
-APT_PACKAGES=("${unique_apt_packages[@]}")
+done < <(printf '%s\n' "${APT_PACKAGES[@]-}" | awk 'NF && !seen[$0]++')
+APT_PACKAGES=("${unique_apt_packages[@]-}")
 
 ## [github release versions]
 # Update the version variable here when upgrading a tool.
@@ -174,7 +174,7 @@ for entry in "${GITHUB_INSTALLS[@]-}"; do
         else
           make_temp_dir "setup-tools-${cmd}" tmp_dir
           status get "$url"
-          curl -L -o "$tmp_dir/$file" "$url"
+          curl -fsSL -o "$tmp_dir/$file" "$url"
           sudo dpkg -i "$tmp_dir/$file"
         fi
       else
@@ -192,7 +192,7 @@ for entry in "${GITHUB_INSTALLS[@]-}"; do
         else
           make_temp_dir "setup-tools-${cmd}" tmp_dir
           status get "$url"
-          curl -L -o "$tmp_dir/$file" "$url"
+          curl -fsSL -o "$tmp_dir/$file" "$url"
           if should_reinstall_tools && [ -e "$HOME/.local/opt/$extra" ]; then
             run rm -rf "$HOME/.local/opt/$extra"
           fi
@@ -215,7 +215,7 @@ for entry in "${GITHUB_INSTALLS[@]-}"; do
         else
           make_temp_dir "setup-tools-${cmd}" tmp_dir
           status get "$url"
-          curl -L -o "$tmp_dir/$file" "$url"
+          curl -fsSL -o "$tmp_dir/$file" "$url"
           tar -C "$HOME/.local/bin" --strip-components="$depth" -xzf "$tmp_dir/$file" "$extra"
           chmod +x "$HOME/.local/bin/$cmd"
         fi
@@ -233,7 +233,7 @@ for entry in "${GITHUB_INSTALLS[@]-}"; do
         else
           make_temp_dir "setup-tools-${cmd}" tmp_dir
           status get "$url"
-          curl -L -o "$tmp_dir/$file" "$url"
+          curl -fsSL -o "$tmp_dir/$file" "$url"
           member="$(unzip -Z1 "$tmp_dir/$file" | awk -v wanted="$extra" '$0 == wanted || $0 ~ ("/" wanted "$") { print; exit }')"
           if [ -z "$member" ]; then
             die "could not find $extra in $url"
@@ -312,7 +312,7 @@ for entry in "${GITHUB_INSTALLS[@]-}"; do
         else
           make_temp_dir "setup-tools-${cmd}" tmp_dir
           status get "$url"
-          curl -L -o "$tmp_dir/$file" "$url"
+          curl -fsSL -o "$tmp_dir/$file" "$url"
           mv "$tmp_dir/$file" "$HOME/.local/bin/$cmd"
           chmod +x "$HOME/.local/bin/$cmd"
         fi

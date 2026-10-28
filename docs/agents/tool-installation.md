@@ -10,4 +10,6 @@ Register every new tool in `scripts/package-registry.sh` so new machines receive
 
 Install single binaries and `.pyz` files in `~/.local/bin/`. Extract tarballs to `~/.local/opt/<name>/` and link their binary from `~/.local/bin/`.
 
+Setup scripts add `~/.local/bin` to their process `PATH`, so freshly installed tools are available to later setup phases and repeat runs detect them. Downloads use curl's silent progress mode while preserving transfer errors.
+
 After changing the tool setup, run `./bootstrap.sh --dry-run`.
