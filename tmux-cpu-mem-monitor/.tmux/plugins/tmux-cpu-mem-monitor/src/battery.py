@@ -3,6 +3,8 @@ from datetime import timedelta
 
 import psutil
 
+CHARGING_ICON = "⚡"
+
 
 def _get_battery():
     return psutil.sensors_battery()
@@ -15,29 +17,28 @@ def _get_charging_status(battery=None):
     return battery is not None and battery.power_plugged
 
 
-def get_battery_percent():
+def get_battery_percent(icon=""):
     """Display battery percentage"""
-    battery = _get_battery()
-    if battery is None:
+    if (battery := _get_battery()) is None:
         return "N/A"
 
     if _get_charging_status(battery):
-        return "Charging"
+        return CHARGING_ICON
 
-    return f"{round(battery.percent)}%"
+    percentage = f"{round(battery.percent)}%"
+    return f"{icon} {percentage}" if icon else percentage
 
 
 def get_battery_time():
     """Display battery time remaining in hours and minutes"""
-    battery = _get_battery()
-    if battery is None:
+    if (battery := _get_battery()) is None:
         return "N/A"
 
     if _get_charging_status(battery):
-        return "Charging"
+        return CHARGING_ICON
 
     time_left = timedelta(seconds=battery.secsleft)
-    print(time_left)
+
     return str(time_left).split(".")[0]
 
 
@@ -52,8 +53,7 @@ def get_battery_long():
     - More than half full
     ...
     """
-    battery = _get_battery()
-    if battery is None:
+    if (battery := _get_battery()) is None:
         return "N/A"
 
     if _get_charging_status(battery):
@@ -76,38 +76,30 @@ def get_battery_long():
             return status
 
 
-def _remap_range(value, low, high, remap_low, remap_high):
-    """Remap the battery percentage into a whole number from 0 up to 7"""
-    return remap_low + (value - low) * (remap_high - remap_low) // (high - low)
-
-
 def get_battery_compact():
-    """Display battery percentage in a compact format"""
-    battery = _get_battery()
-    if battery is None:
+    """Display battery level with a compact block character"""
+    if (battery := _get_battery()) is None:
         return "N/A"
 
     if _get_charging_status(battery):
-        return chr(0x00002593)
+        return CHARGING_ICON
 
-    battery = _remap_range(battery.percent, 0, 100, 0, 7)
+    level = _remap_range(battery.percent, 0, 100, 0, 7)
+    return chr(0x00002581 + int(level))
 
-    # Unicode characters for the battery indicator
-    # 0x00002581-0x00002588
-    battery_indicator = chr(0x00002581 + int(battery))
 
-    return f"{battery_indicator}"
+def _remap_range(value, low, high, remap_low, remap_high):
+    """Remap battery percentage to a whole number from 0 to 7"""
+    return remap_low + (value - low) * (remap_high - remap_low) // (high - low)
 
 
 def main(args):
     if args.percent:
-        battery = get_battery_percent()
+        battery = get_battery_percent(args.icon)
     elif args.time:
         battery = get_battery_time()
     elif args.long:
         battery = get_battery_long()
-    elif args.fun:
-        battery = get_battery_long(mode="humor")
     elif args.compact:
         battery = get_battery_compact()
     else:
@@ -126,6 +118,7 @@ if __name__ == "__main__":
         default=False,
         help="display remaining battery percentage",
     )
+    parser.add_argument("--icon", default="", help="prefix the percentage with an icon")
     type_option.add_argument(
         "-t",
         "--time",
@@ -142,20 +135,12 @@ if __name__ == "__main__":
         default=False,
         help="display remaining battery as a sentence",
     )
-    group.add_argument(
-        "-f",
-        "--fun",
-        action="store_true",
-        default=False,
-        help="display remaining battery with humor",
-    )
-
     parser.add_argument(
         "-c",
         "--compact",
         action="store_true",
         default=False,
-        help="display remaining battery as an icon",
+        help="display remaining battery as a compact block character",
     )
     args = parser.parse_args()
     main(args)

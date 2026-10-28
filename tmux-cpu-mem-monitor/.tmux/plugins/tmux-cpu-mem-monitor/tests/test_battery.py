@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pytest
 
 from src.battery import (
+    CHARGING_ICON,
     get_battery_compact,
     get_battery_long,
     get_battery_percent,
@@ -14,8 +15,11 @@ from src.battery import (
 @patch("psutil.sensors_battery")
 def test_charging(mock_battery, mock_charging_status):
     """Test the battery charging status"""
-    result = get_battery_long()
-    assert result == "Charging"
+    assert get_battery_percent() == CHARGING_ICON
+    assert get_battery_percent("󰁹") == CHARGING_ICON
+    assert get_battery_time() == CHARGING_ICON
+    assert get_battery_long() == "Charging"
+    assert get_battery_compact() == CHARGING_ICON
 
 
 @patch("src.battery._get_charging_status", return_value=False)
@@ -43,16 +47,20 @@ def test_battery_long(mock_battery, mock_charging_status, percentage, status):
 
 @patch("src.battery._get_charging_status", return_value=False)
 @patch("psutil.sensors_battery")
-def test_battery_compact(mock_battery, mock_charging_status):
-    """Test battery compact mode with a range of percentages"""
-    print("Battery percentage:", end=" ")
-    for i in range(0, 101, 10):
-        mock_battery.return_value.percent = i
-        character = get_battery_compact()
-        print(i, character, end=" ")
+def test_battery_percent(mock_battery, mock_charging_status):
+    mock_battery.return_value.percent = 62.7
+    assert get_battery_percent() == "63%"
+    assert get_battery_percent("󰁹") == "󰁹 63%"
 
-        result = ord(character)
-        assert 0x00002581 <= result <= 0x00002588
+
+@patch("src.battery._get_charging_status", return_value=False)
+@patch("psutil.sensors_battery")
+def test_battery_compact(mock_battery, mock_charging_status):
+    """Test compact battery level blocks across the full range."""
+    for percentage in range(0, 101, 10):
+        mock_battery.return_value.percent = percentage
+        character = get_battery_compact()
+        assert 0x00002581 <= ord(character) <= 0x00002588
 
 
 @patch("psutil.sensors_battery", return_value=None)
