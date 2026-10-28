@@ -16,18 +16,18 @@ Python package and runtime manager.
 available, and marks it `done` when the Python is already installed:
 
 ```sh
-uv python install 3.12
-python3.12 --version
+uv python install 3.14
+python3.14 --version
 ```
 
-The `3.12` request lets uv install the latest available Python 3.12 patch for
+The `3.14` request lets uv install the latest available Python 3.14 patch for
 the current uv release metadata instead of pinning a patch version in this repo.
 
 ## Key commands
 
 ```sh
 uv python list          # list available and installed Python versions
-uv python install 3.12  # install the latest available Python 3.12 patch
+uv python install 3.14  # install the latest available Python 3.14 patch
 uv python dir           # show uv's managed Python install directory
-uv python find 3.12     # show the resolved Python 3.12 executable
+uv python find 3.14     # show the resolved Python 3.14 executable
 ```

@@ -35,10 +35,10 @@ else
 fi
 
 if command -v uv >/dev/null 2>&1; then
-  check_status "uv python install 3.12" uv python find 3.12
-  check_status "python3.12 --version" python3.12 --version
+  check_status "uv python install 3.14" uv python find 3.14
+  check_status "python3.14 --version" python3.14 --version
 else
-  status skip "uv not found; skipping Python 3.12 reminder"
+  status skip "uv not found; skipping Python 3.14 reminder"
 fi
 
 repo_skillx="$(bootstrap_root)/local-bin/.local/bin/skillx"

@@ -79,7 +79,7 @@ monitor_venv="$HOME/.local/share/tmux-cpu-mem-monitor-venv"
 
 if [ -d "$monitor_dir" ]; then
   if command -v uv >/dev/null 2>&1; then
-    run uv venv --clear --python 3.12 "$monitor_venv"
+    run uv venv --clear --python 3.14 "$monitor_venv"
 
     if is_dry_run; then
       status plan "$(command_string env "VIRTUAL_ENV=$monitor_venv" uv sync --active --locked --no-install-project --project "$monitor_dir")"
