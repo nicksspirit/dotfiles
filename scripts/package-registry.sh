@@ -40,6 +40,7 @@ REGISTRY_UNIT_IDS=(
   starship
   gh
   stow
+  htop
   universal-ctags
   unzip
   socat
@@ -97,351 +98,357 @@ registry_load_unit() {
   registry_reset_unit
 
   case "$canonical_id" in
-    __core__)
-      REGISTRY_ID=__core__
-      REGISTRY_ALIASES=(core)
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(
-        bash-completion curl git fd-find fzf bat jq yq tmux starship gh stow
-        universal-ctags unzip socat psmisc libpq-dev libsqlite3-dev python3-dev
-        gcc gnome-keyring libsecret-1-0 xdg-utils
-      )
-      ;;
+  __core__)
+    REGISTRY_ID=__core__
+    REGISTRY_ALIASES=(core)
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(
+      bash-completion curl git fd-find fzf bat jq yq tmux starship gh stow
+      universal-ctags unzip socat psmisc libpq-dev libsqlite3-dev python3-dev
+      gcc gnome-keyring libsecret-1-0 xdg-utils
+    )
+    ;;
 
-    bootstrap-prerequisites)
-      REGISTRY_ID=bootstrap-prerequisites
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(ca-certificates curl patch stow unzip build-essential ripgrep)
-      ;;
+  bootstrap-prerequisites)
+    REGISTRY_ID=bootstrap-prerequisites
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(ca-certificates curl patch stow unzip build-essential ripgrep)
+    ;;
 
-    # Stow-only unit: no installer metadata is needed.
-    bash)
-      REGISTRY_ID=bash
-      REGISTRY_ALIASES=(shell)
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(bash)
-      REGISTRY_STOW_PACKAGE=bash
-      ;;
+  # Stow-only unit: no installer metadata is needed.
+  bash)
+    REGISTRY_ID=bash
+    REGISTRY_ALIASES=(shell)
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(bash)
+    REGISTRY_STOW_PACKAGE=bash
+    ;;
 
-    git)
-      REGISTRY_ID=git
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(git)
-      REGISTRY_STOW_PACKAGE=git
-      ;;
+  git)
+    REGISTRY_ID=git
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(git)
+    REGISTRY_STOW_PACKAGE=git
+    ;;
 
-    curl)
-      REGISTRY_ID=curl
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(curl)
-      ;;
+  curl)
+    REGISTRY_ID=curl
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(curl)
+    ;;
 
-    bat)
-      REGISTRY_ID=bat
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(bat)
-      ;;
+  bat)
+    REGISTRY_ID=bat
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(bat)
+    ;;
 
-    # Apt-only unit: canonical ID, distribution package, and no Stow ownership.
-    jq)
-      REGISTRY_ID=jq
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(jq)
-      ;;
+  # Apt-only unit: canonical ID, distribution package, and no Stow ownership.
+  jq)
+    REGISTRY_ID=jq
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(jq)
+    ;;
 
-    yq)
-      REGISTRY_ID=yq
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(yq)
-      ;;
+  yq)
+    REGISTRY_ID=yq
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(yq)
+    ;;
 
-    fzf)
-      REGISTRY_ID=fzf
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(fzf)
-      REGISTRY_STOW_PACKAGE=fzf
-      REGISTRY_SETUP_HOOK=setup-tools:fzf
-      ;;
+  fzf)
+    REGISTRY_ID=fzf
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(fzf)
+    REGISTRY_STOW_PACKAGE=fzf
+    REGISTRY_SETUP_HOOK=setup-tools:fzf
+    ;;
 
-    fd)
-      REGISTRY_ID=fd
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(fd-find)
-      REGISTRY_SETUP_HOOK=setup-tools:fd
-      ;;
+  fd)
+    REGISTRY_ID=fd
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(fd-find)
+    REGISTRY_SETUP_HOOK=setup-tools:fd
+    ;;
 
-    tmux)
-      REGISTRY_ID=tmux
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(tmux)
-      REGISTRY_STOW_PACKAGE=tmux
-      ;;
+  tmux)
+    REGISTRY_ID=tmux
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(tmux)
+    REGISTRY_STOW_PACKAGE=tmux
+    ;;
 
-    starship)
-      REGISTRY_ID=starship
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(starship)
-      REGISTRY_STOW_PACKAGE=starship
-      ;;
+  htop)
+    REGISTRY_ID=htop
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(htop)
+    ;;
 
-    gh)
-      REGISTRY_ID=gh
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(gh)
-      ;;
+  starship)
+    REGISTRY_ID=starship
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(starship)
+    REGISTRY_STOW_PACKAGE=starship
+    ;;
 
-    stow)
-      REGISTRY_ID=stow
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(stow)
-      ;;
+  gh)
+    REGISTRY_ID=gh
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(gh)
+    ;;
 
-    universal-ctags)
-      REGISTRY_ID=universal-ctags
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(universal-ctags)
-      ;;
+  stow)
+    REGISTRY_ID=stow
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(stow)
+    ;;
 
-    unzip)
-      REGISTRY_ID=unzip
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(unzip)
-      ;;
+  universal-ctags)
+    REGISTRY_ID=universal-ctags
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(universal-ctags)
+    ;;
 
-    socat)
-      REGISTRY_ID=socat
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(socat)
-      ;;
+  unzip)
+    REGISTRY_ID=unzip
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(unzip)
+    ;;
 
-    psmisc)
-      REGISTRY_ID=psmisc
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(psmisc)
-      ;;
+  socat)
+    REGISTRY_ID=socat
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(socat)
+    ;;
 
-    libpq-dev)
-      REGISTRY_ID=libpq-dev
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(libpq-dev)
-      ;;
+  psmisc)
+    REGISTRY_ID=psmisc
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(psmisc)
+    ;;
 
-    libsqlite3-dev)
-      REGISTRY_ID=libsqlite3-dev
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(libsqlite3-dev)
-      ;;
+  libpq-dev)
+    REGISTRY_ID=libpq-dev
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(libpq-dev)
+    ;;
 
-    python3-dev)
-      REGISTRY_ID=python3-dev
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(python3-dev)
-      ;;
+  libsqlite3-dev)
+    REGISTRY_ID=libsqlite3-dev
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(libsqlite3-dev)
+    ;;
 
-    gcc)
-      REGISTRY_ID=gcc
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(gcc)
-      ;;
+  python3-dev)
+    REGISTRY_ID=python3-dev
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(python3-dev)
+    ;;
 
-    gnome-keyring)
-      REGISTRY_ID=gnome-keyring
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(gnome-keyring)
-      ;;
+  gcc)
+    REGISTRY_ID=gcc
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(gcc)
+    ;;
 
-    libsecret-1-0)
-      REGISTRY_ID=libsecret-1-0
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(libsecret-1-0)
-      ;;
+  gnome-keyring)
+    REGISTRY_ID=gnome-keyring
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(gnome-keyring)
+    ;;
 
-    xdg-utils)
-      REGISTRY_ID=xdg-utils
-      REGISTRY_INSTALL_METHOD=apt
-      REGISTRY_INSTALL_NAMES=(xdg-utils)
-      ;;
+  libsecret-1-0)
+    REGISTRY_ID=libsecret-1-0
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(libsecret-1-0)
+    ;;
 
-    rg)
-      REGISTRY_ID=rg
-      REGISTRY_ALIASES=(ripgrep)
-      REGISTRY_INSTALL_METHOD=github
-      REGISTRY_COMMAND=rg
-      REGISTRY_DOWNLOAD_METHOD=deb
-      REGISTRY_URL=https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_amd64.deb
-      ;;
+  xdg-utils)
+    REGISTRY_ID=xdg-utils
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(xdg-utils)
+    ;;
 
-    nvim)
-      REGISTRY_ID=nvim
-      REGISTRY_ALIASES=(neovim)
-      REGISTRY_INSTALL_METHOD=github
-      REGISTRY_APT_DEPENDENCIES=(xclip)
-      REGISTRY_COMMAND=nvim
-      REGISTRY_DOWNLOAD_METHOD=tarball
-      REGISTRY_URL=https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
-      REGISTRY_DOWNLOAD_DETAIL=nvim-linux-x86_64
-      REGISTRY_STOW_PACKAGE=nvim
-      ;;
+  rg)
+    REGISTRY_ID=rg
+    REGISTRY_ALIASES=(ripgrep)
+    REGISTRY_INSTALL_METHOD=github
+    REGISTRY_COMMAND=rg
+    REGISTRY_DOWNLOAD_METHOD=deb
+    REGISTRY_URL=https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_amd64.deb
+    ;;
 
-    pandoc)
-      REGISTRY_ID=pandoc
-      REGISTRY_INSTALL_METHOD=github
-      REGISTRY_COMMAND=pandoc
-      REGISTRY_DOWNLOAD_METHOD=bin
-      REGISTRY_URL=https://github.com/jgm/pandoc/releases/download/3.10/pandoc-3.10-linux-amd64.tar.gz
-      REGISTRY_DOWNLOAD_DETAIL=pandoc-3.10/bin/pandoc
-      ;;
+  nvim)
+    REGISTRY_ID=nvim
+    REGISTRY_ALIASES=(neovim)
+    REGISTRY_INSTALL_METHOD=github
+    REGISTRY_APT_DEPENDENCIES=(xclip)
+    REGISTRY_COMMAND=nvim
+    REGISTRY_DOWNLOAD_METHOD=tarball
+    REGISTRY_URL=https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
+    REGISTRY_DOWNLOAD_DETAIL=nvim-linux-x86_64
+    REGISTRY_STOW_PACKAGE=nvim
+    ;;
 
-    # Canonical ID differs from the Windows executable/distribution artifact.
-    npiperelay)
-      REGISTRY_ID=npiperelay
-      REGISTRY_ALIASES=(npiperelay.exe)
-      REGISTRY_INSTALL_METHOD=github
-      REGISTRY_COMMAND=npiperelay.exe
-      REGISTRY_DOWNLOAD_METHOD=zipbin
-      REGISTRY_URL=https://github.com/jstarks/npiperelay/releases/download/v0.1.0/npiperelay_windows_amd64.zip
-      REGISTRY_DOWNLOAD_DETAIL=npiperelay.exe
-      ;;
+  pandoc)
+    REGISTRY_ID=pandoc
+    REGISTRY_INSTALL_METHOD=github
+    REGISTRY_COMMAND=pandoc
+    REGISTRY_DOWNLOAD_METHOD=bin
+    REGISTRY_URL=https://github.com/jgm/pandoc/releases/download/3.10/pandoc-3.10-linux-amd64.tar.gz
+    REGISTRY_DOWNLOAD_DETAIL=pandoc-3.10/bin/pandoc
+    ;;
 
-    keychain)
-      REGISTRY_ID=keychain
-      REGISTRY_INSTALL_METHOD=github
-      REGISTRY_COMMAND=keychain
-      REGISTRY_DOWNLOAD_METHOD=direct
-      REGISTRY_URL=https://github.com/danielrobbins/keychain/releases/download/3.0.0_beta1/keychain-3.0.0_beta1.pyz
-      ;;
+  # Canonical ID differs from the Windows executable/distribution artifact.
+  npiperelay)
+    REGISTRY_ID=npiperelay
+    REGISTRY_ALIASES=(npiperelay.exe)
+    REGISTRY_INSTALL_METHOD=github
+    REGISTRY_COMMAND=npiperelay.exe
+    REGISTRY_DOWNLOAD_METHOD=zipbin
+    REGISTRY_URL=https://github.com/jstarks/npiperelay/releases/download/v0.1.0/npiperelay_windows_amd64.zip
+    REGISTRY_DOWNLOAD_DETAIL=npiperelay.exe
+    ;;
 
-    lazygit)
-      REGISTRY_ID=lazygit
-      REGISTRY_INSTALL_METHOD=github
-      REGISTRY_COMMAND=lazygit
-      REGISTRY_DOWNLOAD_METHOD=latest-bin
-      REGISTRY_URL=https://api.github.com/repos/jesseduffield/lazygit/releases/latest
-      REGISTRY_DOWNLOAD_DETAIL=lazygit
-      REGISTRY_STOW_PACKAGE=lazygit
-      ;;
+  keychain)
+    REGISTRY_ID=keychain
+    REGISTRY_INSTALL_METHOD=github
+    REGISTRY_COMMAND=keychain
+    REGISTRY_DOWNLOAD_METHOD=direct
+    REGISTRY_URL=https://github.com/danielrobbins/keychain/releases/download/3.0.0_beta1/keychain-3.0.0_beta1.pyz
+    ;;
 
-    difftastic)
-      REGISTRY_ID=difftastic
-      REGISTRY_INSTALL_METHOD=github
-      REGISTRY_COMMAND=difft
-      REGISTRY_DOWNLOAD_METHOD=latest-deb
-      REGISTRY_URL=https://api.github.com/repos/dariogriffo/difftastic-debian/releases/latest
-      ;;
+  lazygit)
+    REGISTRY_ID=lazygit
+    REGISTRY_INSTALL_METHOD=github
+    REGISTRY_COMMAND=lazygit
+    REGISTRY_DOWNLOAD_METHOD=latest-bin
+    REGISTRY_URL=https://api.github.com/repos/jesseduffield/lazygit/releases/latest
+    REGISTRY_DOWNLOAD_DETAIL=lazygit
+    REGISTRY_STOW_PACKAGE=lazygit
+    ;;
 
-    aws-cli)
-      REGISTRY_ID=aws-cli
-      REGISTRY_ALIASES=(aws)
-      REGISTRY_INSTALL_METHOD=snap
-      REGISTRY_INSTALL_NAMES=(aws-cli)
-      REGISTRY_INSTALL_ARGS=(--classic)
-      ;;
+  difftastic)
+    REGISTRY_ID=difftastic
+    REGISTRY_INSTALL_METHOD=github
+    REGISTRY_COMMAND=difft
+    REGISTRY_DOWNLOAD_METHOD=latest-deb
+    REGISTRY_URL=https://api.github.com/repos/dariogriffo/difftastic-debian/releases/latest
+    ;;
 
-    zoxide)
-      REGISTRY_ID=zoxide
-      REGISTRY_INSTALL_METHOD=installer
-      REGISTRY_COMMAND=zoxide
-      REGISTRY_URL=https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh
-      ;;
+  aws-cli)
+    REGISTRY_ID=aws-cli
+    REGISTRY_ALIASES=(aws)
+    REGISTRY_INSTALL_METHOD=snap
+    REGISTRY_INSTALL_NAMES=(aws-cli)
+    REGISTRY_INSTALL_ARGS=(--classic)
+    ;;
 
-    uv)
-      REGISTRY_ID=uv
-      REGISTRY_INSTALL_METHOD=installer
-      REGISTRY_COMMAND=uv
-      REGISTRY_URL=https://astral.sh/uv/install.sh
-      REGISTRY_INSTALL_SHELL=sh
-      REGISTRY_INSTALL_ARGS=(-s -- --quiet)
-      ;;
+  zoxide)
+    REGISTRY_ID=zoxide
+    REGISTRY_INSTALL_METHOD=installer
+    REGISTRY_COMMAND=zoxide
+    REGISTRY_URL=https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh
+    ;;
 
-    fnm)
-      REGISTRY_ID=fnm
-      REGISTRY_INSTALL_METHOD=installer
-      REGISTRY_COMMAND=fnm
-      REGISTRY_URL=https://fnm.vercel.app/install
-      REGISTRY_INSTALL_SHELL=bash
-      REGISTRY_INSTALL_ARGS=(-s -- --skip-shell --install-dir "$HOME/.fnm")
-      REGISTRY_STOW_PACKAGE=fnm
-      ;;
+  uv)
+    REGISTRY_ID=uv
+    REGISTRY_INSTALL_METHOD=installer
+    REGISTRY_COMMAND=uv
+    REGISTRY_URL=https://astral.sh/uv/install.sh
+    REGISTRY_INSTALL_SHELL=sh
+    REGISTRY_INSTALL_ARGS=(-s -- --quiet)
+    ;;
 
-    micro)
-      REGISTRY_ID=micro
-      REGISTRY_INSTALL_METHOD=installer
-      REGISTRY_COMMAND=micro
-      REGISTRY_URL=https://getmic.ro
-      REGISTRY_INSTALL_DESTINATION=/usr/bin/micro
-      REGISTRY_INSTALL_SHELL=sh
-      REGISTRY_STOW_PACKAGE=micro
-      ;;
+  fnm)
+    REGISTRY_ID=fnm
+    REGISTRY_INSTALL_METHOD=installer
+    REGISTRY_COMMAND=fnm
+    REGISTRY_URL=https://fnm.vercel.app/install
+    REGISTRY_INSTALL_SHELL=bash
+    REGISTRY_INSTALL_ARGS=(-s -- --skip-shell --install-dir "$HOME/.fnm")
+    REGISTRY_STOW_PACKAGE=fnm
+    ;;
 
-    copilot)
-      REGISTRY_ID=copilot
-      REGISTRY_INSTALL_METHOD=installer
-      REGISTRY_COMMAND=copilot
-      REGISTRY_URL=https://gh.io/copilot-install
-      REGISTRY_INSTALL_SHELL=bash
-      REGISTRY_STOW_PACKAGE=copilot
-      ;;
+  micro)
+    REGISTRY_ID=micro
+    REGISTRY_INSTALL_METHOD=installer
+    REGISTRY_COMMAND=micro
+    REGISTRY_URL=https://getmic.ro
+    REGISTRY_INSTALL_DESTINATION=/usr/bin/micro
+    REGISTRY_INSTALL_SHELL=sh
+    REGISTRY_STOW_PACKAGE=micro
+    ;;
 
-    claude)
-      REGISTRY_ID=claude
-      REGISTRY_INSTALL_METHOD=installer
-      REGISTRY_COMMAND=claude
-      REGISTRY_URL=https://claude.ai/install.sh
-      REGISTRY_INSTALL_SHELL=bash
-      REGISTRY_STOW_PACKAGE=claude
-      ;;
+  copilot)
+    REGISTRY_ID=copilot
+    REGISTRY_INSTALL_METHOD=installer
+    REGISTRY_COMMAND=copilot
+    REGISTRY_URL=https://gh.io/copilot-install
+    REGISTRY_INSTALL_SHELL=bash
+    REGISTRY_STOW_PACKAGE=copilot
+    ;;
 
-    snowflake)
-      REGISTRY_ID=snowflake
-      REGISTRY_ALIASES=(cortex)
-      REGISTRY_INSTALL_METHOD=installer
-      REGISTRY_COMMAND=cortex
-      REGISTRY_URL=https://ai.snowflake.com/static/cc-scripts/install.sh
-      REGISTRY_INSTALL_SHELL=sh
-      REGISTRY_STOW_PACKAGE=snowflake
-      ;;
+  claude)
+    REGISTRY_ID=claude
+    REGISTRY_INSTALL_METHOD=installer
+    REGISTRY_COMMAND=claude
+    REGISTRY_URL=https://claude.ai/install.sh
+    REGISTRY_INSTALL_SHELL=bash
+    REGISTRY_STOW_PACKAGE=claude
+    ;;
 
-    # Installer plus Stow ownership, with a package-specific Stow option.
-    ollama)
-      REGISTRY_ID=ollama
-      REGISTRY_INSTALL_METHOD=installer
-      REGISTRY_COMMAND=ollama
-      REGISTRY_URL=https://ollama.com/install.sh
-      REGISTRY_INSTALL_SHELL=sh
-      REGISTRY_STOW_PACKAGE=ollama
-      REGISTRY_STOW_ARGS=(--no-folding)
-      ;;
+  snowflake)
+    REGISTRY_ID=snowflake
+    REGISTRY_ALIASES=(cortex)
+    REGISTRY_INSTALL_METHOD=installer
+    REGISTRY_COMMAND=cortex
+    REGISTRY_URL=https://ai.snowflake.com/static/cc-scripts/install.sh
+    REGISTRY_INSTALL_SHELL=sh
+    REGISTRY_STOW_PACKAGE=snowflake
+    ;;
 
-    1password)
-      REGISTRY_ID=1password
-      REGISTRY_STOW_PACKAGE=1password
-      ;;
+  # Installer plus Stow ownership, with a package-specific Stow option.
+  ollama)
+    REGISTRY_ID=ollama
+    REGISTRY_INSTALL_METHOD=installer
+    REGISTRY_COMMAND=ollama
+    REGISTRY_URL=https://ollama.com/install.sh
+    REGISTRY_INSTALL_SHELL=sh
+    REGISTRY_STOW_PACKAGE=ollama
+    REGISTRY_STOW_ARGS=(--no-folding)
+    ;;
 
-    treemux)
-      REGISTRY_ID=treemux
-      REGISTRY_STOW_PACKAGE=treemux
-      ;;
+  1password)
+    REGISTRY_ID=1password
+    REGISTRY_STOW_PACKAGE=1password
+    ;;
 
-    tmux-cpu-mem-monitor)
-      REGISTRY_ID=tmux-cpu-mem-monitor
-      REGISTRY_STOW_PACKAGE=tmux-cpu-mem-monitor
-      ;;
+  treemux)
+    REGISTRY_ID=treemux
+    REGISTRY_STOW_PACKAGE=treemux
+    ;;
 
-    local-bin)
-      REGISTRY_ID=local-bin
-      REGISTRY_STOW_PACKAGE=local-bin
-      ;;
+  tmux-cpu-mem-monitor)
+    REGISTRY_ID=tmux-cpu-mem-monitor
+    REGISTRY_STOW_PACKAGE=tmux-cpu-mem-monitor
+    ;;
 
-    pi)
-      REGISTRY_ID=pi
-      REGISTRY_STOW_PACKAGE=pi
-      REGISTRY_SETUP_HOOK=setup-pi
-      ;;
+  local-bin)
+    REGISTRY_ID=local-bin
+    REGISTRY_STOW_PACKAGE=local-bin
+    ;;
 
-    *)
-      printf 'unknown canonical registry unit: %s\n' "$canonical_id" >&2
-      return 1
-      ;;
+  pi)
+    REGISTRY_ID=pi
+    REGISTRY_STOW_PACKAGE=pi
+    REGISTRY_SETUP_HOOK=setup-pi
+    ;;
+
+  *)
+    printf 'unknown canonical registry unit: %s\n' "$canonical_id" >&2
+    return 1
+    ;;
   esac
 }
 
