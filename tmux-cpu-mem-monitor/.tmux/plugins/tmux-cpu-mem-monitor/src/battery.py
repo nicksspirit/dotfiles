@@ -4,27 +4,39 @@ from datetime import timedelta
 import psutil
 
 
-def _get_charging_status():
+def _get_battery():
+    return psutil.sensors_battery()
+
+
+def _get_charging_status(battery=None):
     """Get the battery charging status"""
-    battery = psutil.sensors_battery()
-    return battery.power_plugged
+    if battery is None:
+        battery = _get_battery()
+    return battery is not None and battery.power_plugged
 
 
 def get_battery_percent():
     """Display battery percentage"""
-    if _get_charging_status():
+    battery = _get_battery()
+    if battery is None:
+        return "N/A"
+
+    if _get_charging_status(battery):
         return "Charging"
 
-    battery = round(psutil.sensors_battery().percent)
-    return f"{battery}%"
+    return f"{round(battery.percent)}%"
 
 
 def get_battery_time():
     """Display battery time remaining in hours and minutes"""
-    if _get_charging_status():
+    battery = _get_battery()
+    if battery is None:
+        return "N/A"
+
+    if _get_charging_status(battery):
         return "Charging"
 
-    time_left = timedelta(seconds=psutil.sensors_battery().secsleft)
+    time_left = timedelta(seconds=battery.secsleft)
     print(time_left)
     return str(time_left).split(".")[0]
 
@@ -40,7 +52,11 @@ def get_battery_long():
     - More than half full
     ...
     """
-    if _get_charging_status():
+    battery = _get_battery()
+    if battery is None:
+        return "N/A"
+
+    if _get_charging_status(battery):
         return "Charging"
 
     battery_status = {
@@ -56,7 +72,7 @@ def get_battery_long():
     }
 
     for (low, high), status in battery_status.items():
-        if low <= psutil.sensors_battery().percent <= high:
+        if low <= battery.percent <= high:
             return status
 
 
@@ -67,10 +83,14 @@ def _remap_range(value, low, high, remap_low, remap_high):
 
 def get_battery_compact():
     """Display battery percentage in a compact format"""
-    if _get_charging_status():
+    battery = _get_battery()
+    if battery is None:
+        return "N/A"
+
+    if _get_charging_status(battery):
         return chr(0x00002593)
 
-    battery = _remap_range(psutil.sensors_battery().percent, 0, 100, 0, 7)
+    battery = _remap_range(battery.percent, 0, 100, 0, 7)
 
     # Unicode characters for the battery indicator
     # 0x00002581-0x00002588

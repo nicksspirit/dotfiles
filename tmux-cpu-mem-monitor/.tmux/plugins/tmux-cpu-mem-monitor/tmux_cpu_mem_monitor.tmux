@@ -29,8 +29,9 @@ set_status_right() {
     local -r separator="$(tmux_option '@cpu_mem_metric_separator' '#[fg=white,bg=brightblack,nobold,noitalics,nounderscore]')"
     local -r cpu_icon="$(tmux_option '@cpu_mem_cpu_icon' '')"
     local -r mem_icon="$(tmux_option '@cpu_mem_mem_icon' '')"
+    local -r battery_icon="$(tmux_option '@cpu_mem_battery_icon' '󰁹')"
 
-    tmux set-option -gq status-right "#{prefix_highlight}${lead_style}${metric_style} ${cpu_icon} #{cpu} ${separator}${metric_style} ${mem_icon} #{mem} ${separator}${metric_style} #{agent_session_dots}  #{agent_indicator} #[default]"
+    tmux set-option -gq status-right "#{prefix_highlight}${lead_style}${metric_style} ${cpu_icon} #{cpu} ${separator}${metric_style} ${mem_icon} #{mem} ${separator}${metric_style} ${battery_icon} #{battery -p} ${separator}${metric_style} #{agent_session_dots}  #{agent_indicator} #[default]"
 }
 
 update_placeholder() {

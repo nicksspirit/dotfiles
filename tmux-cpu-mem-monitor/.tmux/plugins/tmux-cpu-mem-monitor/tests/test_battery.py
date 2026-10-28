@@ -2,11 +2,17 @@ from unittest.mock import patch
 
 import pytest
 
-from src.battery import get_battery_compact, get_battery_long
+from src.battery import (
+    get_battery_compact,
+    get_battery_long,
+    get_battery_percent,
+    get_battery_time,
+)
 
 
 @patch("src.battery._get_charging_status", return_value=True)
-def test_charging(mock_charging_status):
+@patch("psutil.sensors_battery")
+def test_charging(mock_battery, mock_charging_status):
     """Test the battery charging status"""
     result = get_battery_long()
     assert result == "Charging"
@@ -47,3 +53,11 @@ def test_battery_compact(mock_battery, mock_charging_status):
 
         result = ord(character)
         assert 0x00002581 <= result <= 0x00002588
+
+
+@patch("psutil.sensors_battery", return_value=None)
+def test_battery_unavailable(mock_battery):
+    assert get_battery_percent() == "N/A"
+    assert get_battery_time() == "N/A"
+    assert get_battery_long() == "N/A"
+    assert get_battery_compact() == "N/A"
