@@ -3,6 +3,7 @@
 set -euo pipefail
 
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONITOR_PYTHON="$HOME/.local/share/tmux-cpu-mem-monitor-venv/bin/python"
 
 tmux_option() {
     local -r value="$(tmux show-option -gqv "$1")"
@@ -15,9 +16,9 @@ tmux_option() {
     fi
 }
 
-require_uv() {
-    if ! command -v uv >/dev/null 2>&1; then
-        tmux display-message "tmux-cpu-mem-monitor: uv is required but not installed."
+require_monitor_python() {
+    if [ ! -x "$MONITOR_PYTHON" ]; then
+        tmux display-message "tmux-cpu-mem-monitor: run scripts/setup-tmux.sh to install its Python environment."
         exit 1
     fi
 }
@@ -44,7 +45,7 @@ update_placeholder() {
 
     local -r flags="$(printf '%s' "$option_value" | awk -F "#{$placeholder" '{print $2}' | sed 's/}.*//')"
     local -r token="#{${placeholder}${flags}}"
-    local -r command="#(cd \"$CURRENT_DIR\" && uv run --project \"$CURRENT_DIR\" --quiet python \"$CURRENT_DIR/src/$script\"$flags)"
+    local -r command="#(\"$MONITOR_PYTHON\" \"$CURRENT_DIR/src/$script\"$flags)"
     local -r escaped_command="${command//&/\\&}"
     local -r new_option_value="${option_value//$token/$escaped_command}"
 
@@ -52,7 +53,7 @@ update_placeholder() {
 }
 
 main() {
-    require_uv
+    require_monitor_python
     set_status_right
 
     local option

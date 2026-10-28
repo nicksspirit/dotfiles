@@ -74,13 +74,19 @@ if [ -f "$indicator_patch" ] && [ -d "$indicator_dir" ]; then
   fi
 fi
 
-if [ -d "$HOME/.tmux/plugins/tmux-cpu-mem-monitor" ]; then
+monitor_dir="$HOME/.tmux/plugins/tmux-cpu-mem-monitor"
+monitor_venv="$HOME/.local/share/tmux-cpu-mem-monitor-venv"
+
+if [ -d "$monitor_dir" ]; then
   if command -v uv >/dev/null 2>&1; then
+    if [ ! -x "$monitor_venv/bin/python" ]; then
+      run uv venv --clear --python 3.12 "$monitor_venv"
+    fi
+
     if is_dry_run; then
-      status plan "cd $(printf '%q' "$HOME/.tmux/plugins/tmux-cpu-mem-monitor") && uv sync"
+      status plan "$(command_string env "VIRTUAL_ENV=$monitor_venv" uv sync --active --locked --no-install-project --project "$monitor_dir")"
     else
-      status run "cd $(printf '%q' "$HOME/.tmux/plugins/tmux-cpu-mem-monitor") && uv sync"
-      (cd "$HOME/.tmux/plugins/tmux-cpu-mem-monitor" && uv sync)
+      run env "VIRTUAL_ENV=$monitor_venv" uv sync --active --locked --no-install-project --project "$monitor_dir"
     fi
   else
     status skip "uv not found; skipping tmux-cpu-mem-monitor sync"
