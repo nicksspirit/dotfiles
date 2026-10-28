@@ -19,6 +19,7 @@ vim.opt.foldlevelstart = 99
 vim.opt.foldenable = true
 
 local reload_group = vim.api.nvim_create_augroup("ReloadChangedBuffers", { clear = true })
+
 vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI", "TermClose" }, {
   group = reload_group,
   callback = function()
