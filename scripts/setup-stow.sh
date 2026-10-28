@@ -115,19 +115,6 @@ remove_overwrite_conflicts() {
   done
 }
 
-remove_matching_treemux_target() {
-  local source="$repo_root/treemux/.tmux/plugins/treemux/configs/treemux_init.lua"
-  local target="$HOME/.tmux/plugins/treemux/configs/treemux_init.lua"
-
-  if [ ! -f "$target" ] || [ -L "$target" ]; then
-    return
-  fi
-
-  if cmp -s "$source" "$target"; then
-    run rm -f "$target"
-  fi
-}
-
 stow_args=(-v)
 
 if is_dry_run; then
@@ -156,10 +143,6 @@ if bootstrap_package_selected local-bin && [[ -d "$local_bin_dir" ]]; then
     [[ -f "$helper" ]] || continue
     ensure_executable "$helper"
   done
-fi
-
-if bootstrap_package_selected treemux; then
-  remove_matching_treemux_target
 fi
 
 for record in "${stow_records[@]-}"; do

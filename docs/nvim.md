@@ -1,6 +1,6 @@
 # Neovim
 
-The `nvim` package manages the LazyVim-style configuration under `~/.config/nvim/`, including local plugin specifications and `lazy-lock.json`.
+The `nvim` package manages the LazyVim-style configuration under `~/.config/nvim/`. Lazy.nvim stores its machine-local plugin lockfile under Neovim's state directory, outside the Stow package.
 
 `scripts/setup-tools.sh` installs Neovim from the official release tarball in `~/.local/opt/nvim-linux-x86_64/` and links `~/.local/bin/nvim`. After stowing, `scripts/setup-nvim.sh` runs `nvim --headless "+Lazy! sync" +qa`.
 
@@ -10,7 +10,7 @@ The `nvim` package manages the LazyVim-style configuration under `~/.config/nvim
 - Options enable truecolor, relative line numbers, two-space indentation, wrapping, mouse support, and clipboard integration.
 - Folding uses Tree-sitter-based `foldexpr`, starts fully unfolded (`foldlevelstart = 99`), and exposes quick fold-level/fold-method commands through the Legendary command palette.
 - `legendary.nvim` provides the `<leader>p` command palette and `render-markdown.nvim` provides Markdown rendering.
-- `lazy-lock.json` is the plugin version snapshot. Do not duplicate its full inventory in prose.
+- Plugin versions are locked locally at `stdpath("state")/lazy-lock.json`; separate machines can update plugins without changing this repository.
 
 `nvim-tree` is used only by the separate Treemux sidebar process; the main LazyVim editor uses Telescope for file navigation. See [`treemux.md`](treemux.md).
 

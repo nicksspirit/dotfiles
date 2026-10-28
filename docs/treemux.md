@@ -1,6 +1,7 @@
 # Treemux sidebar
 
-The `treemux` package stows `~/.tmux/plugins/treemux/configs/treemux_init.lua`.
+The `treemux` package stows `~/.config/treemux/treemux_init.lua`. Keep this
+configuration outside `~/.tmux/plugins/treemux/`, which TPM owns and updates.
 
 Treemux runs a separate Neovim sidebar process, independent of the main LazyVim editor. It uses `nvim-tree`, `nvim-tree-remote.nvim`, filesystem watchers, and reload-on-buffer-enter. The main editor does not load a tree plugin.
 
@@ -66,7 +67,7 @@ replaced with the tmux Neovim popup described above.
 ### Customizing mappings
 
 Mappings are buffer-local and are defined by the `nvim_tree_on_attach`
-function in `treemux/.tmux/plugins/treemux/configs/treemux_init.lua`. It first
+function in `treemux/.config/treemux/treemux_init.lua`. It first
 loads the nvim-tree defaults, then adds, replaces, or removes mappings. To
 customize a key, add or replace a `vim.keymap.set` call in that function; use
 the nvim-tree API action that describes the intended behavior.

@@ -1,4 +1,4 @@
--- Even if your gitconfig redirects https to ssh (url insteadOf), this will make sure that
+-- Even if your gitconfig redirects HTTPS to SSH (url insteadOf), this will make sure that
 -- plugins will be installed via https instead of ssh.
 vim.env.GIT_CONFIG_GLOBAL = ""
 
