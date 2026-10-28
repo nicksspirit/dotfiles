@@ -5,6 +5,7 @@ The `local-bin` package stows user-owned helpers under `~/.local/bin/`.
 - `difft` wraps difftastic with inline display.
 - `gh-browser` opens browser URLs for `gh auth login`.
 - `mwt` manages sparse worktrees from a backend repository's `wt.yaml`; it requires `git` and `yq`.
+- `show-keybindings` opens the package keybinding guides in Neovim.
 - `skillx` safely reconciles globally installed agent skills with `~/.agents/.skill-lock.json`. It requires Python 3.12 or newer and `npx`; it has no third-party Python runtime dependencies and does not require `jq`.
 
 The Stow-facing `skillx` executable loads its implementation from the ignored `skillx-cli` project in this package. The command defaults to `~/.agents/.skill-lock.json`; `--lockfile` or `LOCKFILE` can override it. Ownership used for pruning is recorded separately in `~/.agents/.skillx-managed.json`. Source validation accepts the Skills CLI's JSON output and its supported text list layouts.

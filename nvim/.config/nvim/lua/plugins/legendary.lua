@@ -11,11 +11,6 @@ return {
     "mrjones2014/legendary.nvim",
     priority = 10000,
     lazy = false,
-    init = function()
-      vim.api.nvim_create_user_command("TreemuxShortcuts", function()
-        require("config.treemux_shortcuts").open()
-      end, { desc = "Show Treemux keyboard shortcuts" })
-    end,
     dependencies = {
       "nvim-telescope/telescope.nvim",
       "stevearc/dressing.nvim",
@@ -37,7 +32,6 @@ return {
         { ":Mason", description = "Open Mason LSP installer" },
         { ":RenderMarkdown buf_enable", description = "Render the current Markdown buffer" },
         { ":RenderMarkdown buf_disable", description = "Use the raw current Markdown buffer" },
-        { ":TreemuxShortcuts", description = "Show Treemux keyboard shortcuts" },
         { ":set wrap!", description = "Toggle word wrap" },
         { ":belowright split | terminal", description = "Open terminal at bottom" },
         { "zM", description = "Fold: close all folds" },

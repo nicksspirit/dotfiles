@@ -7,18 +7,11 @@ The `tmux` package manages `~/.tmux.conf` and configures TPM plugins.
 - tmux uses `tmux-256color`, truecolor terminal features, CSI-u extended keys, `Ctrl-A` prefix, one-based pane/window numbering, mouse mode, and a bottom status bar.
 - `update-environment` carries the D-Bus, GNOME keyring, and runtime-directory variables from attaching clients into tmux.
 - The Nord styled status bar shows prefix highlighting, CPU/MEM metrics, the battery icon and percentage (⚡ while charging), and tmux-agent-indicator session markers; numbered icons mark idle sessions.
-- `tmux-menus` opens a popup menu with `prefix + \\`; `prefix + Ctrl-Y` opens Lazygit and `prefix + Ctrl-T` opens a shell popup.
-- `tmux-fzf` replaces `prefix + f` with its selector.
+- `tmux-menus` provides popup menus; `tmux-fzf` provides interactive selectors.
 - The tmux-fzf plugin requires `fzf`; select `fzf` with tmux, and include `bootstrap-prerequisites` for configured plugin build/runtime dependencies.
-- Copy mode uses Vim keys: `Space` starts selection, `y` copies and exits, and `q` exits.
-
-## Layout keys
-
-`Ctrl-W` or `prefix + Ctrl-W` enters the layout table: `h`/`j`/`k`/`l` moves
-focus, uppercase variants swap panes, `z` toggles zoom, `|` and `-` split, `x`
-closes a pane, and `1` through `4` select common layouts. `Tab` and `Shift-Tab`
-mark selector items where tmux-fzf supports multiple selection.
 
 Reload a running server with `tmux source-file ~/.tmux.conf`; never run `tmux kill-server` inside a session.
 
-See [`treemux.md`](treemux.md) for the sidebar and [`tmux-cpu-mem-monitor.md`](tmux-cpu-mem-monitor.md) for the vendored metric wrapper.
+See the [tmux keybindings](keybindings/tmux.md), [Treemux overview](treemux.md),
+and [`tmux-cpu-mem-monitor.md`](tmux-cpu-mem-monitor.md) for the vendored
+metric wrapper.

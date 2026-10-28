@@ -12,14 +12,7 @@ The `nvim` package manages the LazyVim-style configuration under `~/.config/nvim
 - `legendary.nvim` provides the `<leader>p` command palette and `render-markdown.nvim` provides Markdown rendering.
 - Plugin versions are locked locally at `stdpath("state")/lazy-lock.json`; separate machines can update plugins without changing this repository.
 
-`nvim-tree` is used only by the separate Treemux sidebar process; the main LazyVim editor uses Telescope for file navigation. See [`treemux.md`](treemux.md).
-
-## Key commands
-
-- `<leader>p` opens the Legendary command palette.
-- The palette's `TreemuxShortcuts` command opens [`treemux.md`](treemux.md) in a floating Markdown window; press `q` or `Esc` to close it.
-- The command palette includes `:belowright split | terminal` to open a terminal at the bottom.
-- The command palette includes fold controls: `zM`/`zR`/`za`/`zc`/`zo`, `:set foldlevel={0,1,2,3,99}`, and `:set foldmethod={indent,expr,manual}`.
-- `<C-s>` saves the current file; `<C-z>` undoes the last change (mapped to `u`) in normal, insert, and visual modes, alongside the default `u`/`<C-r>` undo/redo keys.
-- `:RenderMarkdown toggle`, `:RenderMarkdown buf_toggle`, and `:RenderMarkdown preview` control Markdown rendering.
-- `:RenderMarkdown log` opens the renderer log for troubleshooting.
+`nvim-tree` is used only by the separate Treemux sidebar process; the main
+LazyVim editor uses Telescope for file navigation. See the [Neovim
+keybindings](keybindings/nvim.md), [Treemux overview](treemux.md), and
+[Treemux keybindings](keybindings/treemux.md).
