@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import traceback
 from argparse import Namespace
-from collections.abc import Callable, Iterable, Iterator, Sequence
+from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
+from contextlib import contextmanager
 from shlex import join as shell_join
 
 from .adapters import CommandResult, InstallRequest, Mutation, Runtime
@@ -13,6 +14,7 @@ from .models import (
     ExecutionEvent,
     FailureState,
     InstalledSkill,
+    ManagedSkill,
     Operation,
     Report,
     Result,
@@ -21,13 +23,14 @@ from .models import (
 from .reconcile import (
     ConfigurationError,
     OwnershipError,
-    adoption_ledger,
-    ledger_without,
+    merge_ownership,
+    ownership_records,
     parse_inventory,
     parse_ledger,
     parse_lockfile,
     prune_candidates,
     repaired_lockfile,
+    serialize_ledger,
     validate,
 )
 
@@ -54,6 +57,7 @@ class AgentSkillError(RuntimeError):
 
 def execute(handler: CommandHandler, args: Namespace) -> Iterator[ExecutionEvent]:
     """Run UI-agnostic orchestration and yield facts about its execution."""
+
     try:
         yield from handler(args)
     except AgentSkillError as error:
@@ -78,13 +82,16 @@ def usage_failure(
         "invalid command usage",
         diagnostics,
     )
+
     if cause is not None:
         error = error.with_traceback(cause.__traceback__)
+
     return tuple(_failure_events(error))
 
 
 def verbosity_from(arguments: Sequence[str]) -> int:
     """Count short and long verbose options before argument parsing succeeds."""
+
     return sum(
         1 if argument in {"-v", "--verbose"} else len(argument) - 1
         for argument in arguments
@@ -115,33 +122,12 @@ def _failure_events(error: AgentSkillError) -> Iterator[ExecutionEvent]:
     )
 
 
-def _event(
-    kind: EventKind,
-    operation: Operation,
-    message: str = "",
-    *,
-    current: int | None = None,
-    total: int | None = None,
-    skill_id: str | None = None,
-    action: EventAction | None = None,
-) -> ExecutionEvent:
-    return ExecutionEvent(
-        kind,
-        operation,
-        message,
-        current,
-        total,
-        skill_id,
-        action=action,
-    )
-
-
 def _complete(report: Report) -> ExecutionEvent:
     return ExecutionEvent(EventKind.COMPLETE, report.operation, report=report)
 
 
 def _audit(operation: Operation) -> ExecutionEvent:
-    return _event(
+    return ExecutionEvent(
         EventKind.PHASE,
         operation,
         "Auditing desired skill inventory...",
@@ -159,7 +145,9 @@ def _confirmation_command(*arguments: str) -> str:
 
 def _blocked(report: Report, *, ownership: bool = False) -> ExecutionEvent:
     if ownership:
-        message = "Blocked. Ownership could not be established safely; no files were changed."
+        message = (
+            "Blocked. Ownership could not be established safely; no files were changed."
+        )
     else:
         unresolved = sum(entry.status is not Status.VALID for entry in report.entries)
         noun = "skill" if unresolved == 1 else "skills"
@@ -167,7 +155,8 @@ def _blocked(report: Report, *, ownership: bool = False) -> ExecutionEvent:
             f"Blocked. {unresolved} {noun} could not be resolved; "
             "no files were changed."
         )
-    return _event(
+
+    return ExecutionEvent(
         EventKind.BLOCKED,
         report.operation,
         message,
@@ -180,7 +169,13 @@ def validated_lockfile(
 ) -> tuple[str, Report]:
     """Read desired state and return its reconciliation report."""
     content = runtime.filesystem.read_text(lockfile)
-    return content, validate(lockfile, content, runtime.npx, operation)
+    skills = parse_lockfile(content)
+    sources = {
+        source: runtime.npx.enumerate_source(source)
+        for source in dict.fromkeys(skill.source for skill in skills)
+    }
+
+    return content, validate(lockfile, skills, sources, operation)
 
 
 def inventory_for(
@@ -188,6 +183,7 @@ def inventory_for(
 ) -> tuple[InstalledSkill, ...]:
     """Load installed skills or raise one contextual external-command failure."""
     result = runtime.npx.inventory()
+
     if result.returncode != 0:
         raise AgentSkillError(
             operation,
@@ -195,63 +191,99 @@ def inventory_for(
             "inventory command failed",
             command_diagnostics(result),
         )
+
     return parse_inventory(result.stdout)
 
 
 def command_diagnostics(result: CommandResult) -> str:
     """Select the command output that explains a failed external command."""
+
     return result.stderr.strip() or result.stdout.strip() or "no diagnostic output"
 
 
-def require_success(
-    mutation: Mutation, operation: Operation, lockfile: str, action: str
-) -> None:
-    """Restore a failed transaction before raising its contextual failure."""
-    if mutation.result.returncode == 0:
-        return
-
-    diagnostics = command_diagnostics(mutation.result)
-    if not mutation.has_rollback:
-        raise AgentSkillError(operation, lockfile, f"{action} failed", diagnostics)
+def managed_ledger(ledger: str, runtime: Runtime) -> tuple[ManagedSkill, ...]:
     try:
-        mutation.rollback()
-    except OSError as error:
-        diagnostics = f"{diagnostics}; rollback failed: {error}"
-        failure_state = FailureState.RECOVERY_REQUIRED
+        content = runtime.filesystem.read_text(ledger)
+    except FileNotFoundError:
+        return ()
+
+    return parse_ledger(content)
+
+
+@contextmanager
+def transaction(
+    mutation: Mutation | None, operation: Operation, lockfile: str, action: str
+) -> Generator[None]:
+    """Keep rollback available until the mutation and ownership update both succeed."""
+
+    try:
+        if mutation is not None and mutation.result.returncode != 0:
+            raise AgentSkillError(
+                operation,
+                lockfile,
+                f"{action} failed",
+                command_diagnostics(mutation.result),
+            )
+
+        yield
+    except (AgentSkillError, ConfigurationError, OSError) as error:
+        message = (
+            str(error)
+            if isinstance(error, AgentSkillError)
+            else f"{action} could not be committed"
+        )
+        diagnostics = (
+            error.diagnostics if isinstance(error, AgentSkillError) else str(error)
+        )
+        state = FailureState.NO_CHANGES
+        if mutation is not None and mutation.has_rollback:
+            try:
+                mutation.rollback()
+            except OSError as rollback_error:
+                diagnostics = f"{diagnostics}; rollback failed: {rollback_error}"
+                state = FailureState.RECOVERY_REQUIRED
+            else:
+                state = FailureState.ROLLED_BACK
+        elif mutation is not None and mutation.result.returncode == 0:
+            state = FailureState.RECOVERY_REQUIRED
+        raise AgentSkillError(
+            operation, lockfile, message, diagnostics, state
+        ) from error
     else:
-        failure_state = FailureState.ROLLED_BACK
-    raise AgentSkillError(
-        operation,
-        lockfile,
-        f"{action} failed",
-        diagnostics,
-        failure_state,
-    )
+        if mutation is not None:
+            mutation.commit()
 
 
-def check_events(lockfile: str, runtime: Runtime) -> Iterator[ExecutionEvent]:
+def check(lockfile: str, runtime: Runtime) -> Iterator[ExecutionEvent]:
     """Report source and skill classifications without changing state."""
     yield _audit(Operation.CHECK)
     _, report = validated_lockfile(Operation.CHECK, lockfile, runtime)
+
     if report.result is Result.BLOCKED:
         yield _blocked(report)
+
     yield _complete(report)
 
 
-def sync_events(
-    lockfile: str, dry_run: bool, agent: list[str], runtime: Runtime
+def sync(
+    lockfile: str, ledger: str, dry_run: bool, agent: list[str], runtime: Runtime
 ) -> Iterator[ExecutionEvent]:
     """Converge installed skills only after every desired entry validates."""
     yield _audit(Operation.SYNC)
-    _, report = validated_lockfile(Operation.SYNC, lockfile, runtime)
+    content, report = validated_lockfile(Operation.SYNC, lockfile, runtime)
+
     if report.result is not Result.OK:
         yield _blocked(report)
         yield _complete(report)
-        return
-    if not report.entries:
-        yield _complete(report)
+
         return
 
+    if not report.entries:
+        yield _complete(report)
+
+        return
+
+    managed = managed_ledger(ledger, runtime)
     synced = Report(
         Operation.SYNC,
         Result.PLANNED if dry_run else Result.CHANGED,
@@ -265,20 +297,27 @@ def sync_events(
         if dry_run
         else f"Syncing {_skill_count(len(report.entries))}"
     )
-    yield _event(EventKind.PHASE, Operation.SYNC, action, action=EventAction.BATCH)
+    yield ExecutionEvent(
+        EventKind.PHASE, Operation.SYNC, action, action=EventAction.BATCH
+    )
+
     if dry_run:
         yield _complete(synced)
+
         return
 
     skills_by_source: dict[str, list[str]] = {}
+
     for entry in report.entries:
         skills_by_source.setdefault(entry.source, []).append(entry.skill)
+
     requests = tuple(
         InstallRequest(source, tuple(skills), tuple(agent))
         for source, skills in skills_by_source.items()
     )
+
     for current, entry in enumerate(report.entries, start=1):
-        yield _event(
+        yield ExecutionEvent(
             EventKind.PROGRESS,
             Operation.SYNC,
             f"Fetching {entry.source}: {entry.skill}...",
@@ -289,19 +328,33 @@ def sync_events(
         )
 
     mutation = runtime.npx.install_transaction(requests)
-    require_success(mutation, Operation.SYNC, lockfile, "install")
-    mutation.commit()
-    yield _event(
+
+    with transaction(mutation, Operation.SYNC, lockfile, "install"):
+        acquired = ownership_records(
+            parse_lockfile(content),
+            inventory_for(Operation.SYNC, lockfile, runtime),
+        )
+        runtime.filesystem.write_atomic(
+            ledger, serialize_ledger(merge_ownership(managed, acquired))
+        )
+
+    yield ExecutionEvent(
         EventKind.MUTATION,
         Operation.SYNC,
         f"Installed or updated {len(report.entries)} requested skill"
         f"{'s' if len(report.entries) != 1 else ''}",
         action=EventAction.BATCH,
     )
+    yield ExecutionEvent(
+        EventKind.MUTATION,
+        Operation.SYNC,
+        f"Updated ownership ledger: {ledger}",
+        action=EventAction.FILE,
+    )
     yield _complete(synced)
 
 
-def repair_events(
+def repair(
     lockfile: str, dry_run: bool, yes: bool, runtime: Runtime
 ) -> Iterator[ExecutionEvent]:
     """Back up and repair only entries proven invalid by enumeration."""
@@ -317,37 +370,44 @@ def repair_events(
             Status.CONFIRMED_INVALID_SOURCE,
         }
     }
+
     if not repairable:
         if report.result is not Result.OK:
             yield _blocked(report)
+
         yield _complete(report)
+
         return
 
     should_change = yes and not dry_run
-    yield _event(
+    yield ExecutionEvent(
         EventKind.PHASE,
         Operation.REPAIR,
         f"{'Repairing' if should_change else 'Planning repair for'} {_skill_count(len(repairable))}",
         action=EventAction.FILE,
     )
     result = Result.PLANNED
+
     if should_change:
         backup = f"{lockfile}.{runtime.now()}.bak"
         runtime.filesystem.copy(lockfile, backup)
-        yield _event(
+        yield ExecutionEvent(
             EventKind.MUTATION,
             Operation.REPAIR,
             f"Backed up {lockfile} to {backup}",
             action=EventAction.FILE,
         )
-        runtime.filesystem.write_atomic(lockfile, repaired_lockfile(content, repairable))
+        runtime.filesystem.write_atomic(
+            lockfile, repaired_lockfile(content, repairable)
+        )
         result = Result.CHANGED
-        yield _event(
+        yield ExecutionEvent(
             EventKind.MUTATION,
             Operation.REPAIR,
             f"Updated {lockfile}",
             action=EventAction.FILE,
         )
+
     yield _complete(
         Report(
             Operation.REPAIR,
@@ -364,23 +424,30 @@ def repair_events(
     )
 
 
-def adopt_events(
+def adopt(
     lockfile: str, ledger: str, dry_run: bool, yes: bool, runtime: Runtime
 ) -> Iterator[ExecutionEvent]:
     """Validate and record exact-path ownership for existing installations."""
     yield _audit(Operation.ADOPT)
     content, report = validated_lockfile(Operation.ADOPT, lockfile, runtime)
+
     if report.result is not Result.OK:
         yield _blocked(report)
         yield _complete(report)
+
         return
+
     if not report.entries:
         yield _complete(report)
+
         return
 
     try:
-        ledger_content = adoption_ledger(
+        acquired = ownership_records(
             parse_lockfile(content), inventory_for(Operation.ADOPT, lockfile, runtime)
+        )
+        ledger_content = serialize_ledger(
+            merge_ownership(managed_ledger(ledger, runtime), acquired)
         )
     except OwnershipError as error:
         blocked = Report(Operation.ADOPT, Result.BLOCKED, lockfile, error.refusals)
@@ -395,26 +462,28 @@ def adopt_events(
             Status.VALID,
             f"ownership path {record.path} will be recorded in {ledger}",
         )
-        for record in parse_ledger(ledger_content)
+        for record in acquired
     )
 
     should_change = yes and not dry_run
-    yield _event(
+    yield ExecutionEvent(
         EventKind.PHASE,
         Operation.ADOPT,
         f"{'Adopting' if should_change else 'Planning adoption for'} {_skill_count(len(report.entries))}",
         action=EventAction.BATCH,
     )
     result = Result.PLANNED
+
     if should_change:
         runtime.filesystem.write_atomic(ledger, ledger_content)
         result = Result.CHANGED
-        yield _event(
+        yield ExecutionEvent(
             EventKind.MUTATION,
             Operation.ADOPT,
             f"Updated ownership ledger: {ledger}",
             action=EventAction.FILE,
         )
+
     yield _complete(
         Report(
             Operation.ADOPT,
@@ -437,25 +506,23 @@ def adopt_events(
     )
 
 
-def prune_events(
+def prune(
     lockfile: str, ledger: str, dry_run: bool, yes: bool, runtime: Runtime
 ) -> Iterator[ExecutionEvent]:
     """Remove only exact-path ledger entries absent from desired state."""
-    yield _event(
+    yield ExecutionEvent(
         EventKind.PHASE,
         Operation.PRUNE,
         "Auditing managed skill inventory...",
         action=EventAction.AUDIT,
     )
     desired = parse_lockfile(runtime.filesystem.read_text(lockfile))
-    managed = parse_ledger(runtime.filesystem.read_text(ledger))
+    managed = managed_ledger(ledger, runtime)
+
+    inventory = inventory_for(Operation.PRUNE, lockfile, runtime)
 
     try:
-        candidates = prune_candidates(
-            desired,
-            managed,
-            inventory_for(Operation.PRUNE, lockfile, runtime),
-        )
+        candidates = prune_candidates(desired, managed, inventory)
     except OwnershipError as error:
         blocked = Report(Operation.PRUNE, Result.BLOCKED, lockfile, error.refusals)
         yield _blocked(blocked, ownership=True)
@@ -471,16 +538,20 @@ def prune_events(
         )
         for record in candidates
     )
+
     if not candidates:
         yield _complete(Report(Operation.PRUNE, Result.OK, lockfile, entries))
+
         return
+
     should_change = yes and not dry_run
-    yield _event(
+    yield ExecutionEvent(
         EventKind.PHASE,
         Operation.PRUNE,
         f"{'Pruning' if should_change else 'Planning prune for'} {_skill_count(len(candidates))}",
         action=EventAction.BATCH,
     )
+
     if not should_change:
         yield _complete(
             Report(
@@ -501,41 +572,31 @@ def prune_events(
                 ),
             )
         )
+
         return
 
-    mutation = runtime.npx.remove_transaction(
-        tuple(record.skill for record in candidates)
+    installed_paths = {item.path for item in inventory}
+    removals = tuple(
+        record.skill for record in candidates if record.path in installed_paths
     )
-    require_success(mutation, Operation.PRUNE, lockfile, "removal")
-    try:
-        runtime.filesystem.write_atomic(ledger, ledger_without(managed, candidates))
-    except OSError as error:
-        try:
-            mutation.rollback()
-        except OSError as rollback_error:
-            raise AgentSkillError(
-                Operation.PRUNE,
-                lockfile,
-                "ownership ledger update failed",
-                f"{error}; rollback failed: {rollback_error}",
-                FailureState.RECOVERY_REQUIRED,
-            ) from rollback_error
-        raise AgentSkillError(
-            Operation.PRUNE,
-            lockfile,
-            "ownership ledger update failed",
-            str(error),
-            FailureState.ROLLED_BACK,
-        ) from error
-    mutation.commit()
-    yield _event(
+    mutation = runtime.npx.remove_transaction(removals) if removals else None
+
+    with transaction(mutation, Operation.PRUNE, lockfile, "removal"):
+        removed_paths = {record.path for record in candidates}
+        runtime.filesystem.write_atomic(
+            ledger,
+            serialize_ledger(
+                tuple(record for record in managed if record.path not in removed_paths)
+            ),
+        )
+
+    yield ExecutionEvent(
         EventKind.MUTATION,
         Operation.PRUNE,
-        f"Removed {len(candidates)} managed skill"
-        f"{'s' if len(candidates) != 1 else ''}",
+        f"Removed {len(removals)} managed skill{'s' if len(removals) != 1 else ''}",
         action=EventAction.BATCH,
     )
-    yield _event(
+    yield ExecutionEvent(
         EventKind.MUTATION,
         Operation.PRUNE,
         f"Updated ownership ledger: {ledger}",
@@ -573,6 +634,8 @@ def _option_value(arguments: Sequence[str], option: str) -> str | None:
     for index, argument in enumerate(arguments):
         if argument == option and index + 1 < len(arguments):
             return arguments[index + 1]
+
         if argument.startswith(f"{option}="):
             return argument.partition("=")[2]
+
     return None

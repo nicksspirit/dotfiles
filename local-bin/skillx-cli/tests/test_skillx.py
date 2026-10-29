@@ -7,6 +7,8 @@ from pathlib import Path
 
 from skillx.adapters import CommandResult, InstallRequest, Mutation, Runtime
 from skillx.main import main
+from skillx.models import Skill, Status
+from skillx.reconcile import validate
 
 
 class FakeFilesystem:
@@ -18,11 +20,13 @@ class FakeFilesystem:
     def read_text(self, path: str) -> str:
         if path not in self.files:
             raise FileNotFoundError(path)
+
         return self.files[path]
 
     def write_atomic(self, path: str, content: str) -> None:
         if path in self.fail_writes:
             raise OSError(f"cannot write {path}")
+
         self.files[path] = content
 
     def copy(self, source: str, destination: str) -> None:
@@ -37,6 +41,8 @@ class FakeNpx:
         self.mutations: list[tuple[object, ...]] = []
         self.install_result = CommandResult(0, "", "")
         self.install_has_rollback = True
+        self.post_install_inventory: CommandResult | None = None
+        self.fail_rollback = False
         self.remove_result = CommandResult(0, "", "")
         self.transaction_events: list[str] = []
 
@@ -51,17 +57,49 @@ class FakeNpx:
             self.mutations.append(
                 ("install", request.source, request.skills, request.agents)
             )
+
         if not self.install_has_rollback:
             return Mutation(self.install_result)
+
+        previous = self.inventory_result
+
+        if self.install_result.returncode == 0:
+            inventory = json.loads(previous.stdout)
+            updated = {skill for request in requests for skill in request.skills}
+            inventory = [item for item in inventory if item["name"] not in updated]
+            inventory.extend(
+                {
+                    "name": skill,
+                    "path": f"/agents/skills/{skill}",
+                    "scope": "global",
+                    "agents": list(request.agents),
+                    "source": request.source,
+                }
+                for request in requests
+                for skill in request.skills
+            )
+            self.inventory_result = self.post_install_inventory or CommandResult(
+                0, json.dumps(inventory), ""
+            )
+
+        def rollback() -> None:
+            self.transaction_events.append("install-rollback")
+
+            if self.fail_rollback:
+                raise OSError("restore failed")
+
+            self.inventory_result = previous
+
         return Mutation(
             self.install_result,
             commit=lambda: self.transaction_events.append("install-commit"),
-            rollback=lambda: self.transaction_events.append("install-rollback"),
+            rollback=rollback,
         )
 
     def remove_transaction(self, skills: tuple[str, ...]) -> Mutation:
         for skill in skills:
             self.mutations.append(("remove", skill))
+
         return Mutation(
             self.remove_result,
             commit=lambda: self.transaction_events.append("remove-commit"),
@@ -77,6 +115,7 @@ class TtyStringIO(io.StringIO):
 class SkillxCommandTests(unittest.TestCase):
     def fixture(self, name: str) -> object:
         path = Path(__file__).with_name("fixtures") / name
+
         return json.loads(path.read_text(encoding="utf-8"))
 
     def runtime(
@@ -94,6 +133,7 @@ class SkillxCommandTests(unittest.TestCase):
             stdout=stdout,
             stderr=stderr,
         )
+
         return runtime, filesystem, npx, stdout, stderr
 
     def test_check_json_reports_valid_entries_without_mutation(self) -> None:
@@ -153,7 +193,9 @@ class SkillxCommandTests(unittest.TestCase):
         self.assertNotIn("\x1b", stdout.getvalue())
         self.assertNotIn("\r", stdout.getvalue())
 
-    def test_check_reports_confirmed_drift_without_calling_the_audit_blocked(self) -> None:
+    def test_check_reports_confirmed_drift_without_calling_the_audit_blocked(
+        self,
+    ) -> None:
         runtime, _, npx, stdout, _ = self.runtime(
             {"skills": {"missing": {"source": "owner/source"}}}
         )
@@ -174,9 +216,7 @@ class SkillxCommandTests(unittest.TestCase):
         runtime, _, npx, stdout, stderr = self.runtime(
             {"skills": {"one": {"source": "owner/source"}}}
         )
-        npx.source_results["owner/source"] = CommandResult(
-            1, "", "source diagnostic"
-        )
+        npx.source_results["owner/source"] = CommandResult(1, "", "source diagnostic")
 
         exit_code = main(
             ["check", "--lockfile", "/config/lock.json", "-v"], runtime=runtime
@@ -206,7 +246,7 @@ class SkillxCommandTests(unittest.TestCase):
         self.assertIn("🎉 Reconciled 1 skill.", stdout.getvalue())
 
     def test_sync_dry_run_human_output_identifies_unapplied_plan(self) -> None:
-        runtime, _, npx, stdout, stderr = self.runtime(
+        runtime, _, npx, stdout, _ = self.runtime(
             {"skills": {"one": {"source": "owner/source"}}}
         )
         npx.source_results["owner/source"] = CommandResult(
@@ -222,10 +262,15 @@ class SkillxCommandTests(unittest.TestCase):
         self.assertIn("==> 📦 Planning sync for 1 skill", stdout.getvalue())
         self.assertIn("📦 owner/source: one", stdout.getvalue())
         self.assertNotIn("owner/source -> one", stdout.getvalue())
-        self.assertIn("✨ Dry run complete. 1 change(s) planned; nothing was changed.", stdout.getvalue())
+        self.assertIn(
+            "✨ Dry run complete. 1 change(s) planned; nothing was changed.",
+            stdout.getvalue(),
+        )
         self.assertNotIn("Result:", stdout.getvalue())
 
-    def test_sync_dry_run_groups_skills_by_source_and_truncates_long_groups(self) -> None:
+    def test_sync_dry_run_groups_skills_by_source_and_truncates_long_groups(
+        self,
+    ) -> None:
         runtime, _, npx, stdout, _ = self.runtime(
             {
                 "skills": {
@@ -313,7 +358,10 @@ class SkillxCommandTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 1)
         self.assertEqual(stderr.getvalue(), "")
-        self.assertIn("🛑 Blocked. 1 skill could not be resolved; no files were changed.", stdout.getvalue())
+        self.assertIn(
+            "🛑 Blocked. 1 skill could not be resolved; no files were changed.",
+            stdout.getvalue(),
+        )
         self.assertIn("Unresolved skills:", stdout.getvalue())
         self.assertIn("✗ owner/source: missing", stdout.getvalue())
         self.assertIn("skill is not available from source", stdout.getvalue())
@@ -366,12 +414,10 @@ class SkillxCommandTests(unittest.TestCase):
 
     def test_confirmation_commands_quote_lockfile_paths_for_the_shell(self) -> None:
         lockfile = "/config/skill lock; echo unsafe.json"
-        runtime, _, npx, stdout, _ = self.runtime(
+        runtime, filesystem, npx, stdout, _ = self.runtime(
             {"skills": {"gone": {"source": "owner/source"}}}
         )
-        runtime.filesystem.files[lockfile] = runtime.filesystem.files.pop(
-            "/config/lock.json"
-        )
+        filesystem.files[lockfile] = filesystem.files.pop("/config/lock.json")
         npx.source_results["owner/source"] = CommandResult(
             0, '{"skills":[{"name":"other"}]}', ""
         )
@@ -518,7 +564,9 @@ class SkillxCommandTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertEqual(stderr.getvalue(), "")
-        self.assertIn("📝 Updated ownership ledger: /config/managed.json", stdout.getvalue())
+        self.assertIn(
+            "📝 Updated ownership ledger: /config/managed.json", stdout.getvalue()
+        )
         self.assertIn("🎉 Adopted 1 skill.", stdout.getvalue())
         self.assertIn("/config/managed.json", filesystem.files)
 
@@ -604,10 +652,14 @@ class SkillxCommandTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(stderr.getvalue(), "")
         self.assertIn("📦 Removed 1 managed skill", stdout.getvalue())
-        self.assertIn("📝 Updated ownership ledger: /config/managed.json", stdout.getvalue())
+        self.assertIn(
+            "📝 Updated ownership ledger: /config/managed.json", stdout.getvalue()
+        )
         self.assertIn("🎉 Pruned 1 skill.", stdout.getvalue())
 
-    def test_tty_human_output_uses_ansi_progress_and_closes_before_summary(self) -> None:
+    def test_tty_human_output_uses_ansi_progress_and_closes_before_summary(
+        self,
+    ) -> None:
         runtime, _, npx, _, stderr = self.runtime(
             {"skills": {"one": {"source": "owner/source"}}}
         )
@@ -623,7 +675,9 @@ class SkillxCommandTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(stderr.getvalue(), "")
         self.assertIn("\x1b[1;34m==>\x1b[0m 🔍", output)
-        self.assertIn("\r\x1b[2K\x1b[2m[1/1] ⬇️ Fetching owner/source: one...\x1b[0m", output)
+        self.assertIn(
+            "\r\x1b[2K\x1b[2m[1/1] ⬇️ Fetching owner/source: one...\x1b[0m", output
+        )
         self.assertIn("\x1b[0m\n📦 Installed or updated", output)
 
     def test_sync_dry_run_reports_plan_without_mutation(self) -> None:
@@ -1184,7 +1238,14 @@ class SkillxCommandTests(unittest.TestCase):
         runtime, _, _, stdout, stderr = self.runtime({"skills": {}})
 
         exit_code = main(
-            ["check", "--lockfile", "/config/lock.json", "--json", "-v", "--bad-option"],
+            [
+                "check",
+                "--lockfile",
+                "/config/lock.json",
+                "--json",
+                "-v",
+                "--bad-option",
+            ],
             runtime=runtime,
         )
 
@@ -1260,6 +1321,418 @@ class SkillxCommandTests(unittest.TestCase):
         self.assertEqual(stderr.getvalue(), "")
         self.assertEqual(json.loads(stdout.getvalue())["result"], "failed")
         self.assertEqual(npx.transaction_events, ["remove-rollback"])
+
+    def test_sync_then_prune_needs_no_adopt_and_preserves_older_records(self) -> None:
+        runtime, filesystem, npx, stdout, _ = self.runtime(
+            {
+                "skills": {
+                    "one": {"source": "owner/source"},
+                    "two": {"source": "owner/source"},
+                }
+            }
+        )
+        npx.source_results["owner/source"] = CommandResult(
+            0, '{"skills":[{"name":"one"},{"name":"two"}]}', ""
+        )
+        stale = {
+            "skill": "stale",
+            "source": "owner/source",
+            "path": "/agents/skills/stale",
+        }
+        filesystem.files["/config/managed.json"] = json.dumps(
+            {"schema_version": 1, "managed": [stale]}
+        )
+        npx.inventory_result = CommandResult(
+            0,
+            json.dumps(
+                [
+                    {
+                        "name": "stale",
+                        "path": stale["path"],
+                        "source": stale["source"],
+                        "scope": "global",
+                        "agents": [],
+                    },
+                    {
+                        "name": "manual",
+                        "path": "/agents/skills/manual",
+                        "source": "owner/manual",
+                        "scope": "global",
+                        "agents": [],
+                    },
+                ]
+            ),
+            "",
+        )
+        common = [
+            "--lockfile",
+            "/config/lock.json",
+            "--ledger",
+            "/config/managed.json",
+            "--json",
+        ]
+
+        self.assertEqual(main(["sync", *common], runtime=runtime), 0)
+        filesystem.files["/config/lock.json"] = json.dumps(
+            {"skills": {"two": {"source": "owner/source"}}}
+        )
+        stdout.seek(0)
+        stdout.truncate()
+        self.assertEqual(main(["sync", *common], runtime=runtime), 0)
+        managed = json.loads(filesystem.files["/config/managed.json"])["managed"]
+        self.assertEqual(
+            {record["skill"] for record in managed}, {"stale", "one", "two"}
+        )
+        stdout.seek(0)
+        stdout.truncate()
+        self.assertEqual(main(["prune", *common, "--yes"], runtime=runtime), 0)
+        self.assertEqual(
+            [mutation for mutation in npx.mutations if mutation[0] == "remove"],
+            [("remove", "stale"), ("remove", "one")],
+        )
+        managed = json.loads(filesystem.files["/config/managed.json"])["managed"]
+        self.assertEqual([record["skill"] for record in managed], ["two"])
+        self.assertEqual(
+            npx.transaction_events,
+            ["install-commit", "install-commit", "remove-commit"],
+        )
+
+    def test_sync_updates_ownership_when_desired_source_changes(self) -> None:
+        runtime, filesystem, npx, _, _ = self.runtime(
+            {"skills": {"one": {"source": "owner/new"}}}
+        )
+        npx.source_results["owner/new"] = CommandResult(
+            0, '{"skills":[{"name":"one"}]}', ""
+        )
+        filesystem.files["/config/managed.json"] = json.dumps(
+            {
+                "schema_version": 1,
+                "managed": [
+                    {
+                        "skill": "one",
+                        "source": "owner/old",
+                        "path": "/agents/skills/one",
+                    }
+                ],
+            }
+        )
+        self.assertEqual(
+            main(
+                [
+                    "sync",
+                    "--lockfile",
+                    "/config/lock.json",
+                    "--ledger",
+                    "/config/managed.json",
+                ],
+                runtime=runtime,
+            ),
+            0,
+        )
+        self.assertEqual(
+            json.loads(filesystem.files["/config/managed.json"])["managed"],
+            [{"skill": "one", "source": "owner/new", "path": "/agents/skills/one"}],
+        )
+
+    def test_adopt_preserves_records_for_skills_awaiting_prune(self) -> None:
+        runtime, filesystem, npx, _, _ = self.runtime(
+            {"skills": {"one": {"source": "owner/source"}}}
+        )
+        npx.source_results["owner/source"] = CommandResult(
+            0, '{"skills":[{"name":"one"}]}', ""
+        )
+        npx.inventory_result = CommandResult(
+            0, json.dumps(self.fixture("owned-inventory.json")), ""
+        )
+        stale = {
+            "skill": "stale",
+            "source": "owner/source",
+            "path": "/agents/skills/stale",
+        }
+        filesystem.files["/config/managed.json"] = json.dumps(
+            {"schema_version": 1, "managed": [stale]}
+        )
+        self.assertEqual(
+            main(
+                [
+                    "adopt",
+                    "--from-lock",
+                    "--lockfile",
+                    "/config/lock.json",
+                    "--ledger",
+                    "/config/managed.json",
+                    "--yes",
+                ],
+                runtime=runtime,
+            ),
+            0,
+        )
+        records = json.loads(filesystem.files["/config/managed.json"])["managed"]
+        self.assertIn(stale, records)
+        self.assertEqual(len(records), 2)
+
+    def test_sync_rejects_malformed_ledger_before_installing(self) -> None:
+        for content in (
+            "invalid",
+            '{"schema_version":2,"managed":[]}',
+            '{"schema_version":1,"managed":null}',
+        ):
+            with self.subTest(content=content):
+                runtime, filesystem, npx, stdout, _ = self.runtime(
+                    {"skills": {"one": {"source": "owner/source"}}}
+                )
+                npx.source_results["owner/source"] = CommandResult(
+                    0, '{"skills":[{"name":"one"}]}', ""
+                )
+                filesystem.files["/config/managed.json"] = content
+                self.assertEqual(
+                    main(
+                        [
+                            "sync",
+                            "--lockfile",
+                            "/config/lock.json",
+                            "--ledger",
+                            "/config/managed.json",
+                            "--json",
+                        ],
+                        runtime=runtime,
+                    ),
+                    2,
+                )
+                self.assertEqual(npx.mutations, [])
+                self.assertEqual(filesystem.files["/config/managed.json"], content)
+                self.assertEqual(
+                    json.loads(stdout.getvalue())["summary"]["failure_state"],
+                    "no-changes",
+                )
+
+    def test_sync_rolls_back_if_ownership_cannot_commit(self) -> None:
+        owned = self.fixture("owned-inventory.json")
+        assert isinstance(owned, list)
+        cases = {
+            "write": None,
+            "inventory-command": CommandResult(1, "", "inventory unavailable"),
+            "inventory-json": CommandResult(0, "invalid", ""),
+            "inventory-missing": CommandResult(0, "[]", ""),
+            "inventory-duplicate": CommandResult(0, json.dumps([*owned, *owned]), ""),
+            "inventory-source": CommandResult(
+                0, json.dumps([{**owned[0], "source": "owner/other"}]), ""
+            ),
+            "ledger-conflict": None,
+        }
+
+        for case, inventory in cases.items():
+            with self.subTest(case=case):
+                runtime, filesystem, npx, stdout, _ = self.runtime(
+                    {"skills": {"one": {"source": "owner/source"}}}
+                )
+                npx.source_results["owner/source"] = CommandResult(
+                    0, '{"skills":[{"name":"one"}]}', ""
+                )
+                records = (
+                    [
+                        {
+                            "skill": "other",
+                            "source": "owner/source",
+                            "path": "/agents/skills/one",
+                        }
+                    ]
+                    if case == "ledger-conflict"
+                    else []
+                )
+                content = json.dumps({"schema_version": 1, "managed": records})
+                filesystem.files["/config/managed.json"] = content
+
+                if case == "write":
+                    filesystem.fail_writes.add("/config/managed.json")
+
+                npx.post_install_inventory = inventory
+                self.assertEqual(
+                    main(
+                        [
+                            "sync",
+                            "--lockfile",
+                            "/config/lock.json",
+                            "--ledger",
+                            "/config/managed.json",
+                            "--json",
+                        ],
+                        runtime=runtime,
+                    ),
+                    2,
+                )
+                self.assertEqual(npx.transaction_events, ["install-rollback"])
+                self.assertEqual(filesystem.files["/config/managed.json"], content)
+                self.assertEqual(npx.inventory_result.stdout, "[]")
+                self.assertEqual(
+                    json.loads(stdout.getvalue())["summary"]["failure_state"],
+                    "rolled-back",
+                )
+
+    def test_sync_reports_recovery_required_if_rollback_fails(self) -> None:
+        runtime, filesystem, npx, stdout, _ = self.runtime(
+            {"skills": {"one": {"source": "owner/source"}}}
+        )
+        npx.source_results["owner/source"] = CommandResult(
+            0, '{"skills":[{"name":"one"}]}', ""
+        )
+        filesystem.fail_writes.add("/config/managed.json")
+        npx.fail_rollback = True
+        self.assertEqual(
+            main(
+                [
+                    "sync",
+                    "--lockfile",
+                    "/config/lock.json",
+                    "--ledger",
+                    "/config/managed.json",
+                    "--json",
+                ],
+                runtime=runtime,
+            ),
+            2,
+        )
+        self.assertEqual(
+            json.loads(stdout.getvalue())["summary"]["failure_state"],
+            "recovery-required",
+        )
+
+    def test_sync_dry_run_does_not_create_ownership(self) -> None:
+        runtime, filesystem, npx, _, _ = self.runtime(
+            {"skills": {"one": {"source": "owner/source"}}}
+        )
+        npx.source_results["owner/source"] = CommandResult(
+            0, '{"skills":[{"name":"one"}]}', ""
+        )
+        original = dict(filesystem.files)
+        self.assertEqual(
+            main(
+                [
+                    "sync",
+                    "--lockfile",
+                    "/config/lock.json",
+                    "--ledger",
+                    "/config/managed.json",
+                    "--dry-run",
+                ],
+                runtime=runtime,
+            ),
+            0,
+        )
+        self.assertEqual(filesystem.files, original)
+        self.assertEqual(npx.mutations, [])
+
+    def test_prune_cleans_ledger_after_direct_removal_without_another_remove(
+        self,
+    ) -> None:
+        for options in ([], ["--yes"]):
+            with self.subTest(options=options):
+                runtime, filesystem, npx, _, _ = self.runtime({"skills": {}})
+                content = json.dumps(
+                    {
+                        "schema_version": 1,
+                        "managed": [
+                            {
+                                "skill": "gone",
+                                "source": "owner/source",
+                                "path": "/agents/skills/gone",
+                            }
+                        ],
+                    }
+                )
+                filesystem.files["/config/managed.json"] = content
+                code = main(
+                    [
+                        "prune",
+                        "--lockfile",
+                        "/config/lock.json",
+                        "--ledger",
+                        "/config/managed.json",
+                        *options,
+                    ],
+                    runtime=runtime,
+                )
+                self.assertEqual(code, 0 if options else 1)
+                self.assertEqual(npx.mutations, [])
+
+                if options:
+                    self.assertEqual(
+                        json.loads(filesystem.files["/config/managed.json"])["managed"],
+                        [],
+                    )
+                else:
+                    self.assertEqual(filesystem.files["/config/managed.json"], content)
+
+    def test_prune_with_no_ledger_is_a_noop(self) -> None:
+        runtime, filesystem, npx, _, _ = self.runtime({"skills": {}})
+        self.assertEqual(
+            main(
+                [
+                    "prune",
+                    "--lockfile",
+                    "/config/lock.json",
+                    "--ledger",
+                    "/config/managed.json",
+                    "--yes",
+                ],
+                runtime=runtime,
+            ),
+            0,
+        )
+        self.assertEqual(npx.mutations, [])
+        self.assertNotIn("/config/managed.json", filesystem.files)
+
+    def test_validation_classifies_captured_results_without_effects(self) -> None:
+        report = validate(
+            "/config/lock.json",
+            (Skill("one", "owner/source"), Skill("private", "owner/private")),
+            {
+                "owner/source": CommandResult(0, '{"skills":[{"name":"one"}]}', ""),
+                "owner/private": CommandResult(1, "", "authentication failed"),
+            },
+        )
+        self.assertEqual(
+            [entry.status for entry in report.entries],
+            [Status.VALID, Status.INDETERMINATE],
+        )
+        self.assertEqual(report.exit_code, 1)
+
+    def test_ledger_only_prune_write_failure_reports_no_changes(self) -> None:
+        runtime, filesystem, npx, stdout, _ = self.runtime({"skills": {}})
+        content = json.dumps(
+            {
+                "schema_version": 1,
+                "managed": [
+                    {
+                        "skill": "gone",
+                        "source": "owner/source",
+                        "path": "/agents/skills/gone",
+                    }
+                ],
+            }
+        )
+        filesystem.files["/config/managed.json"] = content
+        filesystem.fail_writes.add("/config/managed.json")
+        self.assertEqual(
+            main(
+                [
+                    "prune",
+                    "--lockfile",
+                    "/config/lock.json",
+                    "--ledger",
+                    "/config/managed.json",
+                    "--yes",
+                    "--json",
+                ],
+                runtime=runtime,
+            ),
+            2,
+        )
+        self.assertEqual(filesystem.files["/config/managed.json"], content)
+        self.assertEqual(npx.mutations, [])
+        self.assertEqual(
+            json.loads(stdout.getvalue())["summary"]["failure_state"], "no-changes"
+        )
 
 
 if __name__ == "__main__":

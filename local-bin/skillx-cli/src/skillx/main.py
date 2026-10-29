@@ -3,23 +3,22 @@ from __future__ import annotations
 import io
 import os
 import sys
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from .adapters import Runtime, default_runtime
 from .cli import ArgumentParser
 from .execution import (
-    adopt_events,
-    check_events,
+    adopt,
+    check,
     execute,
-    prune_events,
-    repair_events,
-    sync_events,
+    prune,
+    repair,
+    sync,
     usage_failure,
     verbosity_from,
 )
-from .models import ExecutionEvent
 from .ui import Renderer
 
 DEFAULT_LOCKFILE = os.environ.get(
@@ -39,76 +38,49 @@ def _common_args(
         cli.argument("--json", action="store_true", dest="json_output"),
         cli.argument("-v", "--verbose", action="count", default=0),
     ]
+
     if ledger:
         arguments.insert(1, cli.argument("--ledger", default=DEFAULT_LEDGER))
+
     if dry_run:
         arguments.append(cli.argument("--dry-run", action="store_true"))
+
     if yes:
         arguments.append(cli.argument("--yes", action="store_true"))
+
     return tuple(arguments)
 
 
-@cli.command(
+check = cli.command(
     *_common_args(),
     help="validate desired and remote state without mutation",
-)
-def check(lockfile: str, runtime: Runtime) -> Iterable[ExecutionEvent]:
-    """Report source and skill classifications without changing state."""
-    return check_events(lockfile, runtime)
+)(check)
 
 
-@cli.command(
-    *_common_args(dry_run=True),
+sync = cli.command(
+    *_common_args(ledger=True, dry_run=True),
     cli.argument("--agent", action="extend", nargs="+", default=[]),
     help="validate and install or update desired skills",
-)
-def sync(
-    lockfile: str, dry_run: bool, agent: list[str], runtime: Runtime
-) -> Iterable[ExecutionEvent]:
-    """Converge installed skills only after every desired entry validates."""
-    return sync_events(lockfile, dry_run, agent, runtime)
+)(sync)
 
 
-@cli.command(
+repair = cli.command(
     *_common_args(dry_run=True, yes=True),
     help="remove confirmed-invalid desired entries",
-)
-def repair(
-    lockfile: str, dry_run: bool, yes: bool, runtime: Runtime
-) -> Iterable[ExecutionEvent]:
-    """Back up and repair only entries proven invalid by enumeration."""
-    return repair_events(lockfile, dry_run, yes, runtime)
+)(repair)
 
 
-@cli.command(
+adopt = cli.command(
     cli.argument("--from-lock", action="store_true", required=True),
     *_common_args(ledger=True, dry_run=True, yes=True),
     help="explicitly transfer custody of installed desired skills",
-)
-def adopt(
-    lockfile: str,
-    ledger: str,
-    dry_run: bool,
-    yes: bool,
-    runtime: Runtime,
-) -> Iterable[ExecutionEvent]:
-    """Validate and record exact-path ownership for existing installations."""
-    return adopt_events(lockfile, ledger, dry_run, yes, runtime)
+)(adopt)
 
 
-@cli.command(
+prune = cli.command(
     *_common_args(ledger=True, dry_run=True, yes=True),
     help="remove unambiguously owned skills absent from desired state",
-)
-def prune(
-    lockfile: str,
-    ledger: str,
-    dry_run: bool,
-    yes: bool,
-    runtime: Runtime,
-) -> Iterable[ExecutionEvent]:
-    """Remove only exact-path ledger entries absent from desired state."""
-    return prune_events(lockfile, ledger, dry_run, yes, runtime)
+)(prune)
 
 
 def main(argv: Sequence[str] | None = None, *, runtime: Runtime | None = None) -> int:
@@ -141,10 +113,12 @@ def main(argv: Sequence[str] | None = None, *, runtime: Runtime | None = None) -
 
     if args.command is None:
         cli.print_help(file=runtime.stdout)
+
         return 0
 
     args.runtime = runtime
     events = execute(args.func, args)
+
     return Renderer(runtime.stdout, runtime.stderr, verbosity=args.verbose).render(
         events,
         json_output=args.json_output,

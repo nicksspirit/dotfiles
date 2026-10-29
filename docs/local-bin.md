@@ -10,18 +10,26 @@ All command entry points in `local-bin/.local/bin/` are executable scripts.
 - `show-keybindings` opens the package keybinding guides in Neovim.
 - `skillx` safely reconciles globally installed agent skills with `~/.agents/.skill-lock.json`. It requires Python 3.12 or newer and `npx`; it has no third-party Python runtime dependencies and does not require `jq`.
 
-The Stow-facing `skillx` executable loads its implementation from the ignored `skillx-cli` project in this package. The command defaults to `~/.agents/.skill-lock.json`; `--lockfile` or `LOCKFILE` can override it. Ownership used for pruning is recorded separately in `~/.agents/.skillx-managed.json`. Source validation accepts the Skills CLI's JSON output and its supported text list layouts.
+## skillx
 
-Human output is event-driven: it shows an audit phase, meaningful action and mutation events, and a single final summary. `sync --dry-run` groups planned installations by source, showing at most four skill names per source; `-v` expands every group. Confirmation-gated previews say that a plan is ready; explicit `--dry-run` output says that no changes were made. Applied repair and prune output identifies applied entries, and repair reports its actual backup path. Deterministic `check` drift is reported as drift rather than a blocked audit; indeterminate validation and unsafe ownership remain blocked and name every unresolved skill with a safe next step. Failed mutations report whether rollback succeeded or manual recovery may be needed. Interactive terminals use blue phase headers, dim in-place progress, and ANSI line cleanup; redirected output uses complete newline-delimited lines. Human output relies on that prose and the exit code, not a redundant `Result:` footer. Skill references use `source: skill`, never shell-redirection-like `->` syntax. Valid entries are omitted from ordinary check output. `--json` bypasses this renderer and emits exactly one schema-versioned report.
+Use `npx skills` for discovery and individual additions, updates, or removals. Use `skillx` to restore and maintain the skills declared in a lockfile.
 
-Commands:
+| Command | Purpose |
+| --- | --- |
+| `skillx check` | Check that declared skills are available from their sources; does not check installed versions. |
+| `skillx sync` | Install or update declared skills and record ownership, including existing installations it updates. |
+| `skillx repair` | Preview removal of confirmed-invalid lockfile entries; `--yes` applies with a backup. |
+| `skillx adopt --from-lock` | Preview ownership of existing declared skills without reinstalling; `--yes` records it. |
+| `skillx prune` | Preview cleanup of managed skills absent from the lockfile; `--yes` applies. |
 
-- `skillx check` validates every declared source and skill without mutation. It confirms source availability; it does not inspect installed versions.
-- `skillx sync` validates all desired entries before installing or updating any of them. Before live mutation, it preflights the complete install batch in disposable homes and snapshots canonical skills plus the upstream lock for rollback. `--dry-run` performs the full validation pass without invoking a mutating `npx` command. `--agent <names...>` targets named agents in addition to global installation.
-- `skillx repair` previews confirmed-invalid lock entries. `--yes` backs up the selected lockfile and atomically removes only those entries; indeterminate failures are preserved and reported after a partial repair.
-- `skillx adopt --from-lock` previews explicit custody transfer for installed desired skills, including each installed path and ownership-ledger target. `--yes` writes those exact skill, source, and installed-path records. Ordinary sync never adopts existing installations.
-- `skillx prune` previews ledger-backed installations absent from desired state. `--yes` removes them only when each candidate has one unambiguous exact-path inventory match, then reports both removal and ownership-ledger update. The removal batch retains rollback state until the ownership-ledger update commits. Any duplicate name, path mismatch, source conflict, or malformed prerequisite blocks the complete prune.
+The default lockfile is `~/.agents/.skill-lock.json`; override it with `--lockfile` or `LOCKFILE`. Ownership is recorded in `~/.agents/.skillx-managed.json`; sync, adopt, and prune accept `--ledger` to select another file.
 
-Destructive commands support `--dry-run`. Every expected outcome, including a safely blocked reconciliation, is reported as a schema-versioned document with `--json` or as text otherwise. `--json` always writes exactly one document to stdout; failed reports include `summary.failure_state` so automation can distinguish no mutation, successful rollback, and required recovery. Operational failures also produce a failed report; stderr stays quiet by default, `-v`/`--verbose` writes the contextual error and captured `npx` diagnostics, and `-vv` adds a traceback. Exit `0` means success, exit `1` means drift or a safely blocked reconciliation, and exit `2` means reliable execution was prevented by usage, configuration, dependency, or runtime failure.
+To retire a managed skill, remove its lockfile entry, preview `skillx prune`, then run `skillx prune --yes`. Direct upstream removal may leave an ownership record that prune can clean up. Keep any separate lockfile in agreement with intentional removals, or sync will reinstall the skill.
 
-Remote enumeration runs in a disposable home and cache. Timeouts, transport failures, rate limits, authentication failures, SSO failures, and ambiguous not-found responses are indeterminate and can block sync but cannot trigger repair or prune. Local, manual, unadopted, and ambiguously attributed skills are never pruned.
+Uncertain source failures never justify automatic deletion. Prune leaves unmanaged and ambiguously matched installations alone. Sync and prune attempt rollback if a mutation or ownership update fails; check the reported recovery status after a failure.
+
+Use `--dry-run` to preview changes, `--json` for machine-readable reports, `-v` for diagnostics, and `-vv` for tracebacks. See `skillx <command> --help` for options. Exit codes are `0` for success, `1` for drift, blocked operations, or unapplied repair/prune plans, and `2` for usage, configuration, or runtime failures.
+
+Source: [`local-bin/skillx-cli`](../local-bin/skillx-cli); [ownership rules](../local-bin/skillx-cli/src/skillx/reconcile.py).
+
+Run its tests from the repository root with `PYTHONPATH=local-bin/skillx-cli/src python3 -m unittest discover -s local-bin/skillx-cli/tests`.
