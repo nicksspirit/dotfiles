@@ -46,6 +46,7 @@ class ArgumentParser(BaseArgParser):
     @staticmethod
     def _strip_termcodes(msg: str) -> str:
         stripped_msg = TERM_COLOR_CODE_REGEX.sub("", msg)
+
         return TERM_CODE_REGEX.sub(" ", stripped_msg)
 
     @staticmethod
@@ -62,6 +63,7 @@ class ArgumentParser(BaseArgParser):
             formatted = f"{TermColors.OKBLUE}({self.prog}){TermColors.ENDC} {message}\n"
         else:
             formatted = self._strip_termcodes(f"({self.prog}) {message}\n")
+
         self._print_message(formatted)
 
     def print_error(self, message: str, is_colored: bool = False) -> NoReturn:
@@ -71,6 +73,7 @@ class ArgumentParser(BaseArgParser):
             )
         else:
             formatted = self._strip_termcodes(f"{self.prog}: error: {message}\n")
+
         self.exit(2, formatted)
 
     def enable_subcommands(self) -> None:
@@ -80,6 +83,7 @@ class ArgumentParser(BaseArgParser):
 
     def command(self, *arguments, help: str = "⎼", parents: Optional[Sequence] = None):
         parents_ = [] if parents is None else parents
+
         if not hasattr(self, "sub_parser") or getattr(self, "sub_parser", None) is None:
             raise AttributeError(
                 'Sub parser not found! Did you forget to call ".enable_subcommands()" method?'
@@ -100,24 +104,30 @@ class ArgumentParser(BaseArgParser):
                     for name, value in vars(kwargs).items()
                     if name in parameter_names
                 }
+
                 return func(**command_arguments)
 
             for args in arguments:
                 cmd_args, cmd_kwargs = args
                 cmd_kwargs = cmd_kwargs.copy()
+
                 if "exclusive_group" in cmd_kwargs:
                     group_key = cmd_kwargs.pop("exclusive_group")
                     is_group_required = cmd_kwargs.pop("group_required", False)
+
                     if group_key not in group_store:
                         group_store[group_key] = (
                             cmd_parser.add_mutually_exclusive_group(
                                 required=is_group_required
                             )
                         )
+
                     group_store[group_key].add_argument(*cmd_args, **cmd_kwargs)
                 else:
                     cmd_parser.add_argument(*cmd_args, **cmd_kwargs)
+
                 cmd_parser.set_defaults(func=wrapper)
+
             return wrapper
 
         return decorator
@@ -135,6 +145,7 @@ class ArgumentParser(BaseArgParser):
                 {"dest": func.__name__, "action": "store_const", "const": func}
             )
             self.add_argument(*args, **kwargs_)
+
             return func
 
         return decorator

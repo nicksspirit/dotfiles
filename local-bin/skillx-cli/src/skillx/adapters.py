@@ -9,7 +9,7 @@ import sys
 import tempfile
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal, Protocol, TextIO
 
@@ -89,6 +89,7 @@ class LocalFilesystem:
         target = Path(path).expanduser()
         target.parent.mkdir(parents=True, exist_ok=True)
         temporary_path: str | None = None
+
         try:
             with tempfile.NamedTemporaryFile(
                 mode="w",
@@ -101,6 +102,7 @@ class LocalFilesystem:
                 temporary.flush()
                 os.fsync(temporary.fileno())
                 temporary_path = temporary.name
+
             os.replace(temporary_path, target)
             temporary_path = None
         finally:
@@ -139,6 +141,7 @@ class SubprocessNpx:
             return CommandResult(
                 124, stdout, stderr or f"command timed out after {timeout}s"
             )
+
         return CommandResult(completed.returncode, completed.stdout, completed.stderr)
 
     def inventory(self) -> CommandResult:
@@ -157,6 +160,7 @@ class SubprocessNpx:
                     "CI": "1",
                 }
             )
+
             return self._run(
                 ["npx", "skills", "add", source, "--list"], environment=environment
             )
@@ -165,15 +169,19 @@ class SubprocessNpx:
     def _install_arguments(request: InstallRequest) -> list[str]:
         source, skills, agents = request.source, request.skills, request.agents
         arguments = ["npx", "skills", "add", source, "-g", "-y"]
+
         if agents:
             arguments.extend(["--agent", *agents])
+
         arguments.extend(["--skill", *skills])
+
         return arguments
 
     @staticmethod
     def _sanitize_name(name: str) -> str:
         sanitized = re.sub(r"[^a-z0-9._]+", "-", name.lower())
         sanitized = re.sub(r"^[.\-]+|[.\-]+$", "", sanitized)
+
         return sanitized[:255] or "unnamed-skill"
 
     def _snapshot(
@@ -184,23 +192,31 @@ class SubprocessNpx:
         home = Path(self.environment.get("HOME", str(Path.home()))).expanduser()
 
         snapshots: dict[str, Path | None] = {}
+
         for skill in skills:
             live_path = home / ".agents" / "skills" / self._sanitize_name(skill)
+
             if not live_path.exists() and not live_path.is_symlink():
                 snapshots[skill] = None
                 continue
+
             backup = snapshot_root / "skills" / self._sanitize_name(skill)
             backup.parent.mkdir(parents=True, exist_ok=True)
+
             if live_path.is_symlink():
                 backup.symlink_to(os.readlink(live_path))
             else:
                 shutil.copytree(live_path, backup, symlinks=True)
+
             snapshots[skill] = backup
+
         live_lock = home / ".agents" / ".skill-lock.json"
         lock_backup: Path | None = None
+
         if live_lock.exists():
             lock_backup = snapshot_root / ".skill-lock.json"
             shutil.copy2(live_lock, lock_backup)
+
         return temporary, snapshots, lock_backup
 
     def _restore(
@@ -211,24 +227,30 @@ class SubprocessNpx:
     ) -> None:
         if skills:
             removed = self._run(["npx", "skills", "remove", *skills, "-g", "-y"])
+
             if removed.returncode != 0:
                 raise OSError(
                     "rollback cleanup failed: "
                     + (removed.stderr.strip() or removed.stdout.strip())
                 )
+
         for skill, backup in snapshots.items():
             if backup is None:
                 continue
+
             restored = self._run(
                 ["npx", "skills", "add", str(backup), "-g", "-y", "--skill", skill]
             )
+
             if restored.returncode != 0:
                 raise OSError(
                     f"rollback restore failed for {skill}: "
                     + (restored.stderr.strip() or restored.stdout.strip())
                 )
+
         home = Path(self.environment.get("HOME", str(Path.home()))).expanduser()
         live_lock = home / ".agents" / ".skill-lock.json"
+
         if lock_backup is None:
             live_lock.unlink(missing_ok=True)
         else:
@@ -260,13 +282,16 @@ class SubprocessNpx:
                 staged = self._run(
                     self._install_arguments(request), environment=environment
                 )
+
                 if staged.returncode != 0:
                     return Mutation(staged)
 
         temporary, snapshots, lock_backup = self._snapshot(all_skills)
         result = CommandResult(0, "", "")
+
         for request in requests:
             result = self._run(self._install_arguments(request))
+
             if result.returncode != 0:
                 break
 
@@ -299,7 +324,7 @@ def default_runtime() -> Runtime:
     return Runtime(
         filesystem=LocalFilesystem(),
         npx=SubprocessNpx(),
-        now=lambda: datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
+        now=lambda: datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ"),
         stdout=sys.stdout,
         stderr=sys.stderr,
     )

@@ -103,7 +103,7 @@ class ExecutionEvent:
     current: int | None = None
     total: int | None = None
     skill_id: str | None = None
-    report: "Report | None" = None
+    report: Report | None = None
     diagnostic: str = ""
     debug: str = ""
     action: EventAction | None = None
@@ -125,19 +125,24 @@ class Report:
     def exit_code(self) -> int:
         if self.result is Result.FAILED:
             return 2
+
         if self.result is Result.BLOCKED:
             return 1
+
         if self.result is Result.DRIFT:
             return 1
+
         if self.result is Result.PLANNED and self.operation in {
             Operation.REPAIR,
             Operation.PRUNE,
         }:
             return 1
+
         if self.operation is Operation.REPAIR and any(
             entry.status is Status.INDETERMINATE for entry in self.entries
         ):
             return 1
+
         return 0
 
     def to_dict(self) -> dict[str, object]:
@@ -145,8 +150,10 @@ class Report:
             "valid": sum(entry.status is Status.VALID for entry in self.entries),
             "planned_changes": self.planned_changes,
         }
+
         if self.result is Result.FAILED:
             summary["failure_state"] = self.failure_state
+
         return {
             "schema_version": 1,
             "operation": self.operation,
