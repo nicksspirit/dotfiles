@@ -5,7 +5,7 @@ The `local-bin` package stows user-owned helpers under `~/.local/bin/`.
 All command entry points in `local-bin/.local/bin/` are executable scripts.
 
 - `difft` wraps difftastic with inline display.
-- `gh-browser` opens browser URLs for `gh auth login`.
+- `browser.sh` opens URLs for commands such as `gh auth login` and can also be called directly. When `~/.opener.sock` is present, it sends HTTP or HTTPS URLs to the forwarded opener service using `socat`; otherwise it uses the available WSL or desktop opener. The `local-bin` bootstrap unit installs `socat`.
 - `mwt` manages sparse worktrees from a backend repository's `wt.yaml`; it requires `git` and `yq`.
 - `show-keybindings` opens the package keybinding guides in Neovim.
 - `skillx` safely reconciles globally installed agent skills with `~/.agents/.skill-lock.json`. It requires Python 3.12 or newer and `npx`; it has no third-party Python runtime dependencies and does not require `jq`.

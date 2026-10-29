@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+url="${1:-}"
+if [ -z "$url" ]; then
+  printf 'browser.sh: missing URL\n' >&2
+  exit 1
+fi
+
+if [ -S "$HOME/.opener.sock" ] && command -v socat >/dev/null 2>&1; then
+  case "$url" in
+    http://*|https://*) ;;
+    *) printf 'browser.sh: expected an HTTP or HTTPS URL\n' >&2; exit 1 ;;
+  esac
+  if [[ "$url" == *$'\n'* || "$url" == *$'\r'* ]]; then
+    printf 'browser.sh: URL must not contain line breaks\n' >&2
+    exit 1
+  fi
+  printf '%s\n' "$url" | socat - "UNIX-CONNECT:$HOME/.opener.sock"
+  exit
+fi
+
+if command -v wslview >/dev/null 2>&1; then
+  exec wslview "$url"
+fi
+
+if command -v xdg-open >/dev/null 2>&1; then
+  exec xdg-open "$url"
+fi
+
+if command -v explorer.exe >/dev/null 2>&1; then
+  exec explorer.exe "$url"
+fi
+
+if command -v cmd.exe >/dev/null 2>&1; then
+  exec cmd.exe /c start "" "$url"
+fi
+
+printf 'browser.sh: no browser opener found for %s\n' "$url" >&2
+exit 1

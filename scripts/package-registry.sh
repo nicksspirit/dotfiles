@@ -441,6 +441,7 @@ registry_load_unit() {
 
   local-bin)
     REGISTRY_ID=local-bin
+    REGISTRY_APT_DEPENDENCIES=(socat)
     REGISTRY_STOW_PACKAGE=local-bin
     ;;
 
