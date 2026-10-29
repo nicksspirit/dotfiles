@@ -128,8 +128,8 @@ export MICRO_TRUECOLOR=1
 export FZF_TMUX_OPTS='-p80%,60%'
 
 # Prefer a browser helper that gh can launch directly.
-if command -v browser.sh >/dev/null 2>&1; then
-  export BROWSER=browser.sh
+if command -v browser >/dev/null 2>&1; then
+  export BROWSER=browser
 fi
 
 #
