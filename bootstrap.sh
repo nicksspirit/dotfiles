@@ -144,6 +144,10 @@ fi
 
 scripts+=(setup-tools.sh setup-stow.sh)
 
+if registry_hook_selected setup-ssh-server; then
+  scripts+=(setup-ssh-server.sh)
+fi
+
 if bootstrap_package_selected micro; then
   scripts+=(setup-micro.sh)
 fi

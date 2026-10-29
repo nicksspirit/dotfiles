@@ -23,6 +23,11 @@ Keep host-specific shell settings in the local override described in [`bash.md`]
 
 `setup-postinstall.sh` is not run automatically; run it separately for its checks and skill synchronization when needed.
 
+Select `ssh-server` explicitly on remote Debian hosts to install OpenSSH and run
+`setup-ssh-server.sh` after tool installation. It manages the server socket-forwarding
+drop-in, validates syntax and effective settings with rollback on validation failure,
+and reloads an active `ssh` service. See [`ssh-server.md`](../ssh-server.md).
+
 Bootstrap scripts source `scripts/lib.sh` (which loads the registry) and call `enable_error_trap`. Use `log` for top-level sections, `sublog` for nested work, and `status` for indented outcomes; multiline `status` messages align continuation lines beneath the message. `run` makes ordinary commands dry-run aware; use `run_sh` only for pipelines or compound shell commands. Do not print bootstrap actions with ad hoc `printf` or `echo`. `NO_COLOR=1` disables color output.
 
 Postinstall SSH reminders derive candidates from `ssh -G github.com` and only name a key when exactly one configured identity file exists. With no candidate or multiple candidates, print generic guidance and do not guess which key to load.

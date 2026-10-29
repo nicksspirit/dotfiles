@@ -30,6 +30,7 @@ REGISTRY_UNIT_IDS=(
   __core__
   fastfetch
   wsl
+  ssh-server
   bash
   git
   curl
@@ -120,6 +121,13 @@ registry_load_unit() {
   wsl)
     REGISTRY_ID=wsl
     REGISTRY_SETUP_HOOK=setup-wsl
+    ;;
+
+  ssh-server)
+    REGISTRY_ID=ssh-server
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(openssh-server)
+    REGISTRY_SETUP_HOOK=setup-ssh-server
     ;;
 
   # Stow-only unit: no installer metadata is needed.

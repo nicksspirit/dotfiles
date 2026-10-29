@@ -39,7 +39,7 @@ test_default_baseline() {
 
   # Assert
   [[ "$output" == *"$baseline"* ]] || { printf 'missing baseline\n' >&2; return 1; }
-  for unexpected in 'npiperelay' '1password' 'network-manager' 'net-tools' 'stow -nv' '==> WSL' '==> micro plugins'; do
+  for unexpected in 'npiperelay' '1password' 'network-manager' 'net-tools' 'stow -nv' '==> WSL' '==> micro plugins' 'openssh-server' '==> SSH server'; do
     [[ "$output" != *"$unexpected"* ]] || { printf 'unexpected: %s\n' "$unexpected" >&2; return 1; }
   done
 }
@@ -54,6 +54,21 @@ test_wsl_opt_in() {
   # Assert
   [[ "$output" == *'==> WSL'* && "$output" == *'/etc/wsl.conf'* && "$output" != *npiperelay* ]] || {
     printf 'WSL setup did not match the selected package\n' >&2; return 1;
+  }
+}
+
+test_ssh_server_opt_in() {
+  # Arrange
+  local output
+
+  # Act
+  output="$("$repo_root/bootstrap.sh" --dry-run -p ssh-server)"
+
+  # Assert
+  [[ "$output" == *openssh-server* && "$output" == *'==> SSH server socket forwarding'* &&
+     "$output" == *'StreamLocalBindUnlink yes'* && "$output" == *'StreamLocalBindMask 0177'* &&
+     "$output" == *'sudo /usr/sbin/sshd -t'* && "$output" != *'stow -nv'* ]] || {
+    printf 'SSH server install or configuration hook missing\n' >&2; return 1;
   }
 }
 
@@ -114,10 +129,13 @@ test_core_baseline() {
 }
 
 test_network_tools() {
+  # Arrange
   local output
 
+  # Act
   output="$("$repo_root/bootstrap.sh" --dry-run -p network-manager -p net-tools)"
 
+  # Assert
   [[ "$output" == *'sudo apt-get install -y network-manager wpasupplicant wireless-regdb net-tools ca-certificates curl stow fastfetch'* && "$output" != *'stow -nv'* ]] || {
     printf 'network tools or Wi-Fi dependencies did not match selected packages\n' >&2; return 1;
   }
@@ -221,6 +239,7 @@ test_removed_prerequisite_id() {
 test_setup_scripts_are_executable
 test_default_baseline
 test_wsl_opt_in
+test_ssh_server_opt_in
 test_1password_dependencies
 test_transitive_dependencies
 test_zip_dependencies
