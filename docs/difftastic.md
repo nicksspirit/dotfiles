@@ -15,6 +15,8 @@ calls `/usr/bin/difft --display inline "$@"`. This ensures `--display inline` is
 always active without needing to embed flags in git config (git passes positional
 args directly to `diff.external`, so flags can't be added there).
 
+Package-scoped bootstrap of `difftastic` also deploys the `local-bin` wrapper.
+
 Git config and aliases reference `difft` (the wrapper), not `difftastic` directly.
 
 ## Git integration

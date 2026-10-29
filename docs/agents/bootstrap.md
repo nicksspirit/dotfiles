@@ -2,7 +2,7 @@
 
 `scripts/package-registry.sh` is the authoritative Bash-only registry. `REGISTRY_UNIT_IDS` is its only enumeration list, and each unit has one self-contained `registry_load_unit` case stanza with explicitly named fields. Canonical IDs are separate from command names, distribution names, and Stow package directories; aliases include `npiperelay.exe` (for `npiperelay`) and `cortex` (for `snowflake`). The registry contains apt, GitHub, Snap, installer, Stow ownership, per-package Stow options, and setup-hook names. Setup phases use `registry_hook_selected` so hook metadata controls package-scoped post-install work instead of serving as a descriptive dead field. The registry intentionally has no jq/yq/Python dependency.
 
-Package mode validates IDs before running setup, then installs and stows only matching registry records. Pass multiple `--package` options to select multiple records; omitting them selects the full registry. Unknown IDs fail before mutation.
+Package mode validates IDs before running setup, then installs and stows the selected registry records and their transitive `REGISTRY_PACKAGE_DEPENDENCIES`. For example, `tmux`, `gh`, and `difftastic` require `local-bin` for their configured helper commands. Pass multiple `--package` options to select multiple records; omitting them selects the full registry. Unknown IDs fail before mutation.
 
 After cloning the repository, choose the package IDs that fit the host and pass one `--package` option for each. IDs and their installation metadata are defined in `scripts/package-registry.sh`; include any prerequisite units required by the selected packages.
 

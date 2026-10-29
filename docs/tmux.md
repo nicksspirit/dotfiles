@@ -14,4 +14,5 @@ Reload a running server with `tmux source-file ~/.tmux.conf`; never run `tmux ki
 
 See the [tmux keybindings](keybindings/tmux.md), [Treemux overview](treemux.md),
 and [`tmux-cpu-mem-monitor.md`](tmux-cpu-mem-monitor.md) for the vendored
-metric wrapper.
+metric wrapper. Package-scoped bootstrap of `tmux` also deploys the
+`local-bin` helpers it calls.

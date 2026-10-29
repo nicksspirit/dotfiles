@@ -99,6 +99,20 @@ if ((${#BOOTSTRAP_PACKAGES[@]})); then
     canonical_packages+=("$(registry_resolve "$requested")")
   done
   BOOTSTRAP_PACKAGES=("${canonical_packages[@]}")
+
+  for ((package_index = 0; package_index < ${#BOOTSTRAP_PACKAGES[@]}; package_index++)); do
+    selected_package="${BOOTSTRAP_PACKAGES[package_index]}"
+    registry_load_unit "$selected_package"
+    if ((${#REGISTRY_PACKAGE_DEPENDENCIES[@]})); then
+      for required_package in "${REGISTRY_PACKAGE_DEPENDENCIES[@]}"; do
+        required_package="$(registry_resolve "$required_package")"
+        case " ${BOOTSTRAP_PACKAGES[*]} " in
+          *" $required_package "*) ;;
+          *) BOOTSTRAP_PACKAGES+=("$required_package") ;;
+        esac
+      done
+    fi
+  done
 fi
 
 if [[ "$ADOPT" == "1" && "$OVERWRITE" == "1" ]]; then

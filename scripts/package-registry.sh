@@ -21,6 +21,7 @@
 #   REGISTRY_INSTALL_DESTINATION installer-specific destination path
 #   REGISTRY_INSTALL_SHELL       shell used by an installer
 #   REGISTRY_INSTALL_ARGS        installer or Snap arguments
+#   REGISTRY_PACKAGE_DEPENDENCIES other bootstrap units required by this unit
 #   REGISTRY_STOW_PACKAGE        repository directory owned by GNU Stow
 #   REGISTRY_STOW_ARGS           package-specific GNU Stow arguments
 #   REGISTRY_SETUP_HOOK          setup phase selected by registry_hook_selected
@@ -88,6 +89,7 @@ registry_reset_unit() {
   REGISTRY_INSTALL_DESTINATION=
   REGISTRY_INSTALL_SHELL=
   REGISTRY_INSTALL_ARGS=()
+  REGISTRY_PACKAGE_DEPENDENCIES=()
   REGISTRY_STOW_PACKAGE=
   REGISTRY_STOW_ARGS=()
   REGISTRY_SETUP_HOOK=
@@ -175,6 +177,7 @@ registry_load_unit() {
     REGISTRY_ID=tmux
     REGISTRY_INSTALL_METHOD=apt
     REGISTRY_INSTALL_NAMES=(tmux)
+    REGISTRY_PACKAGE_DEPENDENCIES=(local-bin)
     REGISTRY_STOW_PACKAGE=tmux
     ;;
 
@@ -195,6 +198,7 @@ registry_load_unit() {
     REGISTRY_ID=gh
     REGISTRY_INSTALL_METHOD=apt
     REGISTRY_INSTALL_NAMES=(gh)
+    REGISTRY_PACKAGE_DEPENDENCIES=(local-bin)
     ;;
 
   stow)
@@ -334,6 +338,7 @@ registry_load_unit() {
     REGISTRY_COMMAND=difft
     REGISTRY_DOWNLOAD_METHOD=latest-deb
     REGISTRY_URL=https://api.github.com/repos/dariogriffo/difftastic-debian/releases/latest
+    REGISTRY_PACKAGE_DEPENDENCIES=(local-bin)
     ;;
 
   aws-cli)
