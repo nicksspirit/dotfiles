@@ -39,7 +39,7 @@ test_default_baseline() {
 
   # Assert
   [[ "$output" == *"$baseline"* ]] || { printf 'missing baseline\n' >&2; return 1; }
-  for unexpected in 'npiperelay' '1password' 'stow -nv' '==> WSL' '==> micro plugins'; do
+  for unexpected in 'npiperelay' '1password' 'network-manager' 'net-tools' 'stow -nv' '==> WSL' '==> micro plugins'; do
     [[ "$output" != *"$unexpected"* ]] || { printf 'unexpected: %s\n' "$unexpected" >&2; return 1; }
   done
 }
@@ -110,6 +110,16 @@ test_core_baseline() {
   # Assert
   [[ "$output" == *"$baseline"* && "$output" != *universal-ctags* ]] || {
     printf 'core did not match the baseline\n' >&2; return 1;
+  }
+}
+
+test_network_tools() {
+  local output
+
+  output="$("$repo_root/bootstrap.sh" --dry-run -p network-manager -p net-tools)"
+
+  [[ "$output" == *'sudo apt-get install -y network-manager wpasupplicant wireless-regdb net-tools ca-certificates curl stow fastfetch'* && "$output" != *'stow -nv'* ]] || {
+    printf 'network tools or Wi-Fi dependencies did not match selected packages\n' >&2; return 1;
   }
 }
 
@@ -215,6 +225,7 @@ test_1password_dependencies
 test_transitive_dependencies
 test_zip_dependencies
 test_core_baseline
+test_network_tools
 test_reinstall_selected_package
 test_reinstall_requires_package
 test_reinstall_short_option

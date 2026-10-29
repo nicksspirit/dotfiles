@@ -46,6 +46,8 @@ REGISTRY_UNIT_IDS=(
   universal-ctags
   unzip
   socat
+  network-manager
+  net-tools
   psmisc
   libpq-dev
   libsqlite3-dev
@@ -227,6 +229,19 @@ registry_load_unit() {
     REGISTRY_ID=socat
     REGISTRY_INSTALL_METHOD=apt
     REGISTRY_INSTALL_NAMES=(socat)
+    ;;
+
+  network-manager)
+    REGISTRY_ID=network-manager
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(network-manager)
+    REGISTRY_APT_DEPENDENCIES=(wpasupplicant wireless-regdb)
+    ;;
+
+  net-tools)
+    REGISTRY_ID=net-tools
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(net-tools)
     ;;
 
   psmisc)
