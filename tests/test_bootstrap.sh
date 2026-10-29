@@ -144,16 +144,16 @@ test_core_baseline() {
   }
 }
 
-test_network_tools() {
+test_wifi_package() {
   # Arrange
   local output
 
   # Act
-  output="$("$repo_root/bootstrap.sh" --dry-run -p network-manager -p net-tools)"
+  output="$("$repo_root/bootstrap.sh" --dry-run -p wifi)"
 
   # Assert
-  [[ "$output" == *'sudo apt-get install -y network-manager wpasupplicant wireless-regdb net-tools ca-certificates curl stow fastfetch'* && "$output" != *'stow -nv'* ]] || {
-    printf 'network tools or Wi-Fi dependencies did not match selected packages\n' >&2; return 1;
+  [[ "$output" == *'sudo apt-get install -y network-manager net-tools wpasupplicant wireless-regdb ca-certificates curl stow fastfetch'* && "$output" != *'stow -nv'* ]] || {
+    printf 'Wi-Fi package did not include its networking tools and backend dependencies\n' >&2; return 1;
   }
 }
 
@@ -261,7 +261,7 @@ test_1password_dependencies
 test_transitive_dependencies
 test_zip_dependencies
 test_core_baseline
-test_network_tools
+test_wifi_package
 test_reinstall_selected_package
 test_reinstall_requires_package
 test_reinstall_short_option

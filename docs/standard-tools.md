@@ -4,7 +4,7 @@
 
 The AWS CLI has canonical ID `aws-cli` and alias `aws`; it is installed from Snap with `--classic`, and its binary is `/snap/bin/aws`. Installer metadata is centralized in the registry while installation implementations remain in `scripts/setup-tools.sh`.
 
-`network-manager` and `net-tools` are selectable apt-only bootstrap IDs in `scripts/package-registry.sh`, installed by `scripts/setup-tools.sh`. Selecting `network-manager` also installs `wpasupplicant` and `wireless-regdb` for Wi-Fi. It provides `nmcli` and the terminal interface `nmtui`; `net-tools` provides legacy diagnostics such as `ifconfig`, `route`, and `netstat`. These packages have no Stow configuration and are not part of the automatic baseline.
+`wifi` is the single selectable bootstrap ID for networking tools in `scripts/package-registry.sh`, installed by `scripts/setup-tools.sh`. It installs `network-manager`, `net-tools`, `wpasupplicant`, and `wireless-regdb` together. NetworkManager provides `nmcli` and the terminal interface `nmtui`; `net-tools` provides diagnostics such as `ifconfig`, `route`, and `netstat`. The `wifi` package has no Stow configuration and is not part of the automatic baseline. Select it with `./bootstrap.sh --package wifi` instead of separate networking package IDs.
 
 Wi-Fi also requires firmware for the host's adapter. Broadcom BCM4322 hosts using `b43` need the appropriate `firmware-b43-installer` firmware from Debian's `contrib` component while an internet connection is available. Bootstrap does not enable repository components or install hardware-specific firmware.
 
