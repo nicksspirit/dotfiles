@@ -148,6 +148,10 @@ if registry_hook_selected setup-ssh-server; then
   scripts+=(setup-ssh-server.sh)
 fi
 
+if registry_hook_selected setup-linux-laptop; then
+  scripts+=(setup-linux-laptop.sh)
+fi
+
 if bootstrap_package_selected micro; then
   scripts+=(setup-micro.sh)
 fi

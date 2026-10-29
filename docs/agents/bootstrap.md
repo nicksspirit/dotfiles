@@ -28,6 +28,11 @@ Select `ssh-server` explicitly on remote Debian hosts to install OpenSSH and run
 drop-in, validates syntax and effective settings with rollback on validation failure,
 and reloads an active `ssh` service. See [`ssh-server.md`](../ssh-server.md).
 
+Select `linux-laptop` explicitly for Linux laptops used as always-on servers.
+Its `setup-linux-laptop.sh` hook ignores lid and idle sleep in logind and masks
+systemd sleep targets. It supports standalone dry runs and does not reboot or
+restart logind. See [`linux-laptop.md`](../linux-laptop.md).
+
 Bootstrap scripts source `scripts/lib.sh` (which loads the registry) and call `enable_error_trap`. Use `log` for top-level sections, `sublog` for nested work, and `status` for indented outcomes; multiline `status` messages align continuation lines beneath the message. `run` makes ordinary commands dry-run aware; use `run_sh` only for pipelines or compound shell commands. Do not print bootstrap actions with ad hoc `printf` or `echo`. `NO_COLOR=1` disables color output.
 
 Postinstall SSH reminders derive candidates from `ssh -G github.com` and only name a key when exactly one configured identity file exists. With no candidate or multiple candidates, print generic guidance and do not guess which key to load.

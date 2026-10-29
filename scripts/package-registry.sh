@@ -31,6 +31,7 @@ REGISTRY_UNIT_IDS=(
   fastfetch
   wsl
   ssh-server
+  linux-laptop
   bash
   git
   curl
@@ -128,6 +129,11 @@ registry_load_unit() {
     REGISTRY_INSTALL_METHOD=apt
     REGISTRY_INSTALL_NAMES=(openssh-server)
     REGISTRY_SETUP_HOOK=setup-ssh-server
+    ;;
+
+  linux-laptop)
+    REGISTRY_ID=linux-laptop
+    REGISTRY_SETUP_HOOK=setup-linux-laptop
     ;;
 
   # Stow-only unit: no installer metadata is needed.

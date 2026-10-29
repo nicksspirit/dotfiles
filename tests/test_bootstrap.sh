@@ -39,7 +39,7 @@ test_default_baseline() {
 
   # Assert
   [[ "$output" == *"$baseline"* ]] || { printf 'missing baseline\n' >&2; return 1; }
-  for unexpected in 'npiperelay' '1password' 'network-manager' 'net-tools' 'stow -nv' '==> WSL' '==> micro plugins' 'openssh-server' '==> SSH server'; do
+  for unexpected in 'npiperelay' '1password' 'network-manager' 'net-tools' 'stow -nv' '==> WSL' '==> micro plugins' 'openssh-server' '==> SSH server' '==> Linux laptop'; do
     [[ "$output" != *"$unexpected"* ]] || { printf 'unexpected: %s\n' "$unexpected" >&2; return 1; }
   done
 }
@@ -69,6 +69,22 @@ test_ssh_server_opt_in() {
      "$output" == *'StreamLocalBindUnlink yes'* && "$output" == *'StreamLocalBindMask 0177'* &&
      "$output" == *'sudo /usr/sbin/sshd -t'* && "$output" != *'stow -nv'* ]] || {
     printf 'SSH server install or configuration hook missing\n' >&2; return 1;
+  }
+}
+
+test_linux_laptop_opt_in() {
+  # Arrange
+  local output
+
+  # Act
+  output="$("$repo_root/bootstrap.sh" --dry-run -p linux-laptop)"
+
+  # Assert
+  [[ "$output" == *'==> Linux laptop server power policy'* &&
+     "$output" == *'HandleLidSwitch=ignore'* && "$output" == *'IdleAction=ignore'* &&
+     "$output" == *'sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target'* &&
+     "$output" != *'stow -nv'* ]] || {
+    printf 'Linux laptop configuration hook missing\n' >&2; return 1;
   }
 }
 
@@ -240,6 +256,7 @@ test_setup_scripts_are_executable
 test_default_baseline
 test_wsl_opt_in
 test_ssh_server_opt_in
+test_linux_laptop_opt_in
 test_1password_dependencies
 test_transitive_dependencies
 test_zip_dependencies
