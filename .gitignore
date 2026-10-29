@@ -11,6 +11,7 @@
 /.local/
 /.cortex/
 /.pi/
+/.playwright-mcp/
 agents/.agents/skills/
 *.bak
 
