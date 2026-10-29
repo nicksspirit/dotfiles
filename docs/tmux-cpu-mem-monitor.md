@@ -2,6 +2,8 @@
 
 The `tmux-cpu-mem-monitor` package vendors a fork of `hendrikmi/tmux-cpu-mem-monitor` at `~/.tmux/plugins/tmux-cpu-mem-monitor`.
 
+Package-scoped bootstrap selects `tmux` and `uv` with the monitor.
+
 ## Status segment
 
 The wrapper manages the CPU/MEM/battery `status-right` segment:

@@ -8,7 +8,7 @@ The `tmux` package manages `~/.tmux.conf` and configures TPM plugins.
 - `update-environment` carries the D-Bus, GNOME keyring, and runtime-directory variables from attaching clients into tmux.
 - The Nord styled status bar shows prefix highlighting, CPU/MEM metrics, the battery icon and percentage (⚡ while charging), and tmux-agent-indicator session markers; numbered icons mark idle sessions.
 - `tmux-menus` provides popup menus; `tmux-fzf` provides interactive selectors.
-- The tmux-fzf plugin requires `fzf`; select `fzf` with tmux, and include `bootstrap-prerequisites` for configured plugin build/runtime dependencies.
+- Package-scoped bootstrap of `tmux` selects `fzf` and `local-bin`, and installs Git and `patch` for plugin setup.
 
 Reload a running server with `tmux source-file ~/.tmux.conf`; never run `tmux kill-server` inside a session.
 

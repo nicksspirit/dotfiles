@@ -4,7 +4,7 @@ The `1password` package stows `~/.1password/agent-bridge.sh`. Interactive Bash s
 
 ## Requirements
 
-- `scripts/setup-tools.sh` installs `socat` and `npiperelay.exe`.
+- Selecting `1password` installs `socat` and `npiperelay.exe`; select `wsl` separately only when the repository's WSL settings are wanted.
 - 1Password for Windows has Developer > `Use the SSH agent` enabled.
 - The Windows `OpenSSH Authentication Agent` service is stopped and disabled so 1Password owns `\\.\pipe\openssh-ssh-agent`.
 - If `%LOCALAPPDATA%/1Password/config/ssh/agent.toml` exists, it limits the SSH keys exposed to WSL.

@@ -3,6 +3,7 @@
 The `micro` package manages `settings.json`, `bindings.json`, `palettero.cfg`,
 and Nord color schemes under `~/.config/micro/`. Buffer history under
 `~/.config/micro/buffers/` is runtime state and is not tracked.
+Package-scoped bootstrap also installs Git for plugin setup.
 
 ## Current configuration
 

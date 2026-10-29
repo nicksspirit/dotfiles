@@ -23,5 +23,6 @@ Use [documentation rules](docs/agents/documentation.md) for documentation change
 
 - Update the relevant canonical documentation.
 - Run the task-appropriate validation from the focused guide.
+- After changing the package registry or dependency selection, run `bash tests/test_bootstrap.sh`.
 - Do not overwrite a real file in `$HOME` without inspection and user confirmation.
 - Do not create planning or scratch-pad files in this repository.

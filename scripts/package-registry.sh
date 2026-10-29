@@ -28,7 +28,8 @@
 
 REGISTRY_UNIT_IDS=(
   __core__
-  bootstrap-prerequisites
+  fastfetch
+  wsl
   bash
   git
   curl
@@ -104,17 +105,19 @@ registry_load_unit() {
     REGISTRY_ID=__core__
     REGISTRY_ALIASES=(core)
     REGISTRY_INSTALL_METHOD=apt
-    REGISTRY_INSTALL_NAMES=(
-      bash-completion curl git fd-find fzf bat jq yq tmux starship gh stow
-      universal-ctags unzip socat psmisc libpq-dev libsqlite3-dev python3-dev
-      gcc gnome-keyring libsecret-1-0 xdg-utils
-    )
+    REGISTRY_INSTALL_NAMES=(ca-certificates curl stow)
+    REGISTRY_PACKAGE_DEPENDENCIES=(fastfetch)
     ;;
 
-  bootstrap-prerequisites)
-    REGISTRY_ID=bootstrap-prerequisites
+  fastfetch)
+    REGISTRY_ID=fastfetch
     REGISTRY_INSTALL_METHOD=apt
-    REGISTRY_INSTALL_NAMES=(ca-certificates curl patch stow unzip build-essential ripgrep)
+    REGISTRY_INSTALL_NAMES=(fastfetch)
+    ;;
+
+  wsl)
+    REGISTRY_ID=wsl
+    REGISTRY_SETUP_HOOK=setup-wsl
     ;;
 
   # Stow-only unit: no installer metadata is needed.
@@ -177,7 +180,8 @@ registry_load_unit() {
     REGISTRY_ID=tmux
     REGISTRY_INSTALL_METHOD=apt
     REGISTRY_INSTALL_NAMES=(tmux)
-    REGISTRY_PACKAGE_DEPENDENCIES=(local-bin)
+    REGISTRY_APT_DEPENDENCIES=(git patch)
+    REGISTRY_PACKAGE_DEPENDENCIES=(local-bin fzf)
     REGISTRY_STOW_PACKAGE=tmux
     ;;
 
@@ -286,7 +290,7 @@ registry_load_unit() {
     REGISTRY_ID=nvim
     REGISTRY_ALIASES=(neovim)
     REGISTRY_INSTALL_METHOD=github
-    REGISTRY_APT_DEPENDENCIES=(xclip)
+    REGISTRY_APT_DEPENDENCIES=(git xclip build-essential ripgrep)
     REGISTRY_COMMAND=nvim
     REGISTRY_DOWNLOAD_METHOD=tarball
     REGISTRY_URL=https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
@@ -306,6 +310,7 @@ registry_load_unit() {
   # Canonical ID differs from the Windows executable/distribution artifact.
   npiperelay)
     REGISTRY_ID=npiperelay
+    REGISTRY_APT_DEPENDENCIES=(unzip)
     REGISTRY_ALIASES=(npiperelay.exe)
     REGISTRY_INSTALL_METHOD=github
     REGISTRY_COMMAND=npiperelay.exe
@@ -377,6 +382,7 @@ registry_load_unit() {
 
   micro)
     REGISTRY_ID=micro
+    REGISTRY_APT_DEPENDENCIES=(git)
     REGISTRY_INSTALL_METHOD=installer
     REGISTRY_COMMAND=micro
     REGISTRY_URL=https://getmic.ro
@@ -426,16 +432,20 @@ registry_load_unit() {
 
   1password)
     REGISTRY_ID=1password
+    REGISTRY_APT_DEPENDENCIES=(socat)
+    REGISTRY_PACKAGE_DEPENDENCIES=(npiperelay)
     REGISTRY_STOW_PACKAGE=1password
     ;;
 
   treemux)
     REGISTRY_ID=treemux
+    REGISTRY_PACKAGE_DEPENDENCIES=(tmux nvim uv)
     REGISTRY_STOW_PACKAGE=treemux
     ;;
 
   tmux-cpu-mem-monitor)
     REGISTRY_ID=tmux-cpu-mem-monitor
+    REGISTRY_PACKAGE_DEPENDENCIES=(tmux uv)
     REGISTRY_STOW_PACKAGE=tmux-cpu-mem-monitor
     ;;
 

@@ -5,7 +5,7 @@ Personal Linux/WSL shell, editor, and AI-tool configuration managed with
 
 ## Bootstrap
 
-Preview, then apply:
+Preview, then install the bootstrap baseline:
 
 ```sh
 ./bootstrap.sh --dry-run
@@ -14,8 +14,8 @@ Preview, then apply:
 
 Run `./bootstrap.sh --help` for additional options.
 
-To select only some configuration or tools, pass one `--package ID` option per
-registry ID. Preview the selection with `--dry-run` before applying it. See
+To add configuration or tools, pass one `--package ID` option per registry ID.
+Preview the selection with `--dry-run` before applying it. See
 [`docs/agents/bootstrap.md`](docs/agents/bootstrap.md) for the pattern.
 
 ## Repository layout

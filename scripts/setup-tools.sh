@@ -12,19 +12,14 @@ Usage: scripts/setup-tools.sh [options]
 
 Options:
   -n, --dry-run          Print planned commands without changing files
-      --reinstall-tools Reinstall or refresh tools even when already installed
   -h, --help             Show this help message
 EOF
 }
 
-REINSTALL_TOOLS="${REINSTALL_TOOLS:-0}"
 for arg in "$@"; do
   case "$arg" in
     -n|--dry-run)
       DRY_RUN=1
-      ;;
-    --reinstall-tools)
-      REINSTALL_TOOLS=1
       ;;
     -h|--help)
       usage
@@ -38,11 +33,6 @@ for arg in "$@"; do
   esac
 done
 export DRY_RUN
-export REINSTALL_TOOLS
-
-should_reinstall_tools() {
-  [[ "${REINSTALL_TOOLS:-0}" == "1" ]]
-}
 
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -57,8 +47,20 @@ APT_PACKAGES=()
 GITHUB_INSTALLS=()
 SNAP_PACKAGES=()
 INSTALLER_TOOLS=()
+REINSTALL_APT_PACKAGES=()
+REINSTALL_COMMANDS=()
 while read -r registry_id; do
   registry_load_unit "$registry_id"
+  case " ${BOOTSTRAP_REINSTALL_PACKAGES:-} " in
+    *" $registry_id "*)
+      if [[ "$REGISTRY_INSTALL_METHOD" == apt ]]; then
+        REINSTALL_APT_PACKAGES+=("${REGISTRY_INSTALL_NAMES[@]}")
+      else
+        REINSTALL_COMMANDS+=("${REGISTRY_COMMAND:-${REGISTRY_INSTALL_NAMES[0]-}}")
+      fi
+      [[ "$registry_id" == fd || "$registry_id" == fzf ]] && REINSTALL_COMMANDS+=("$registry_id")
+      ;;
+  esac
   case "$REGISTRY_INSTALL_METHOD" in
     apt)
       APT_PACKAGES+=("${REGISTRY_INSTALL_NAMES[@]}")
@@ -80,6 +82,14 @@ while IFS= read -r pkg; do
   [[ -n "$pkg" ]] && unique_apt_packages+=("$pkg")
 done < <(printf '%s\n' "${APT_PACKAGES[@]-}" | awk 'NF && !seen[$0]++')
 APT_PACKAGES=("${unique_apt_packages[@]-}")
+
+should_reinstall_tools() {
+  local item
+  for item in "${REINSTALL_COMMANDS[@]-}"; do
+    [[ -n "$item" && "$item" == "$1" ]] && return 0
+  done
+  return 1
+}
 
 ## [github release versions]
 # Update the version variable here when upgrading a tool.
@@ -137,21 +147,25 @@ KEYCHAIN_VERSION="3.0.0_beta1"
 
 log "apt packages"
 apt_targets=()
+apt_reinstall_targets=()
 for pkg in "${APT_PACKAGES[@]-}"; do
   [[ -n "$pkg" ]] || continue
-  if should_reinstall_tools || ! apt_package_installed "$pkg"; then
+  if [[ " ${REINSTALL_APT_PACKAGES[*]-} " == *" $pkg "* ]]; then
+    apt_reinstall_targets+=("$pkg")
+  elif ! apt_package_installed "$pkg"; then
     apt_targets+=("$pkg")
   else
     status skip "$pkg already installed"
   fi
 done
 
-if [ "${#apt_targets[@]}" -gt 0 ]; then
+if ((${#apt_targets[@]} || ${#apt_reinstall_targets[@]})); then
   run sudo apt-get update
-  if should_reinstall_tools; then
-    run sudo apt-get install -y --reinstall "${apt_targets[@]}"
-  else
+  if ((${#apt_targets[@]})); then
     run sudo apt-get install -y "${apt_targets[@]}"
+  fi
+  if ((${#apt_reinstall_targets[@]})); then
+    run sudo apt-get install -y --reinstall "${apt_reinstall_targets[@]}"
   fi
 fi
 
@@ -167,7 +181,7 @@ for entry in "${GITHUB_INSTALLS[@]-}"; do
 
   case "$method" in
     deb)
-      if should_reinstall_tools || ! command_exists "$cmd"; then
+      if should_reinstall_tools "$cmd" || ! command_exists "$cmd"; then
         sublog "$cmd"
         if is_dry_run; then
           status get "$url"
@@ -184,7 +198,7 @@ for entry in "${GITHUB_INSTALLS[@]-}"; do
       ;;
 
     tarball)
-      if should_reinstall_tools || ! command_exists "$cmd"; then
+      if should_reinstall_tools "$cmd" || ! command_exists "$cmd"; then
         sublog "$cmd"
         if is_dry_run; then
           status get "$url"
@@ -194,7 +208,7 @@ for entry in "${GITHUB_INSTALLS[@]-}"; do
           make_temp_dir "setup-tools-${cmd}" tmp_dir
           status get "$url"
           curl -fsSL -o "$tmp_dir/$file" "$url"
-          if should_reinstall_tools && [ -e "$HOME/.local/opt/$extra" ]; then
+          if should_reinstall_tools "$cmd" && [ -e "$HOME/.local/opt/$extra" ]; then
             run rm -rf "$HOME/.local/opt/$extra"
           fi
           tar -C "$HOME/.local/opt" -xzf "$tmp_dir/$file"
@@ -207,7 +221,7 @@ for entry in "${GITHUB_INSTALLS[@]-}"; do
       ;;
 
     bin)
-      if should_reinstall_tools || ! command_exists "$cmd"; then
+      if should_reinstall_tools "$cmd" || ! command_exists "$cmd"; then
         sublog "$cmd"
         depth="$(echo "$extra" | tr -cd '/' | wc -c)"
         if is_dry_run; then
@@ -226,7 +240,7 @@ for entry in "${GITHUB_INSTALLS[@]-}"; do
       ;;
 
     zipbin)
-      if should_reinstall_tools || ! command_exists "$cmd"; then
+      if should_reinstall_tools "$cmd" || ! command_exists "$cmd"; then
         sublog "$cmd"
         if is_dry_run; then
           status get "$url"
@@ -248,7 +262,7 @@ for entry in "${GITHUB_INSTALLS[@]-}"; do
       ;;
 
     latest-bin)
-      if should_reinstall_tools || ! command_exists "$cmd"; then
+      if should_reinstall_tools "$cmd" || ! command_exists "$cmd"; then
         sublog "$cmd"
         if is_dry_run; then
           status get "$url"
@@ -274,7 +288,7 @@ for entry in "${GITHUB_INSTALLS[@]-}"; do
       ;;
 
     latest-deb)
-      if should_reinstall_tools || ! apt_package_installed difftastic; then
+      if should_reinstall_tools "$cmd" || ! apt_package_installed difftastic; then
         sublog "$cmd"
         case "$(uname -m)" in
           x86_64) difftastic_arch=amd64 ;;
@@ -305,7 +319,7 @@ for entry in "${GITHUB_INSTALLS[@]-}"; do
       ;;
 
     direct)
-      if should_reinstall_tools || ! command_exists "$cmd"; then
+      if should_reinstall_tools "$cmd" || ! command_exists "$cmd"; then
         sublog "$cmd"
         if is_dry_run; then
           status get "$url"
@@ -333,14 +347,14 @@ log "snap packages"
 for entry in "${SNAP_PACKAGES[@]-}"; do
   [[ -n "$entry" ]] || continue
   IFS='|' read -r pkg flags <<< "$entry"
-  if should_reinstall_tools || ! snap list "$pkg" >/dev/null 2>&1; then
+  if should_reinstall_tools "$pkg" || ! snap list "$pkg" >/dev/null 2>&1; then
     sublog "$pkg"
     snap_args=("$pkg")
     if [ -n "${flags:-}" ]; then
       read -r -a snap_flags <<< "$flags"
       snap_args+=("${snap_flags[@]}")
     fi
-    if should_reinstall_tools && snap list "$pkg" >/dev/null 2>&1; then
+    if should_reinstall_tools "$pkg" && snap list "$pkg" >/dev/null 2>&1; then
       install_cmd="$(command_string sudo snap refresh "$pkg")"
       snap_command=(sudo snap refresh "$pkg")
     else
@@ -378,7 +392,7 @@ for entry in "${INSTALLER_TOOLS[@]-}"; do
   if ! bootstrap_package_selected "$cmd"; then
     continue
   fi
-  if should_reinstall_tools || ! command_exists "$cmd"; then
+  if should_reinstall_tools "$cmd" || ! command_exists "$cmd"; then
     sublog "$cmd"
     if [ -n "${dest:-}" ]; then
       if is_dry_run; then
@@ -403,7 +417,7 @@ done
 ## [fzf]
 # Installed via git clone + bundled install script (not a pipe-to-sh installer).
 if registry_hook_selected setup-tools:fzf; then
-  if should_reinstall_tools; then
+  if should_reinstall_tools fzf; then
     if [ -d "$HOME/.fzf/.git" ]; then
       run git -C "$HOME/.fzf" pull --ff-only
     else
@@ -439,7 +453,7 @@ if registry_hook_selected setup-tools:fd; then
 
     # Generate bash completions
     completions_dir="$HOME/.local/share/bash-completion/completions"
-    if [ ! -f "$completions_dir/fd" ] || should_reinstall_tools; then
+    if [ ! -f "$completions_dir/fd" ] || should_reinstall_tools fd; then
       if is_dry_run; then
         status plan "mkdir -p $completions_dir && fdfind --gen-completions bash > $completions_dir/fd"
       else

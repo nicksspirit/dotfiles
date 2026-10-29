@@ -8,23 +8,14 @@ usage() {
   cat <<'EOF'
 Usage: ./bootstrap.sh [options]
 
-Runs the shell setup bootstrap scripts in order:
-  setup-wsl.sh
-  setup-tools.sh
-  setup-stow.sh
-  setup-micro.sh
-  setup-tmux.sh
-  setup-treemux.sh
-  setup-nvim.sh
-  setup-pi.sh
-  setup-postinstall.sh
+Installs the bootstrap baseline and any selected packages and dependencies.
 
 Options:
   -n, --dry-run          Print planned commands without changing files
-  -p, --package NAME     Install only selected package-scoped items
+  -p, --package NAME     Add a package and its dependencies
       --adopt            Pass --adopt to GNU Stow when stowing packages
       --overwrite        Remove existing package-file targets before stowing
-      --reinstall-tools  Reinstall or refresh tools even when already installed
+  -r, --reinstall        Reinstall explicitly selected packages' tools
   -h, --help             Show this help message
 
 Optional environment:
@@ -35,7 +26,7 @@ Examples:
   ./bootstrap.sh
   ./bootstrap.sh --adopt
   ./bootstrap.sh --overwrite
-  ./bootstrap.sh --reinstall-tools
+  ./bootstrap.sh --dry-run --reinstall --package jq
   ./bootstrap.sh --package claude
 EOF
 }
@@ -43,9 +34,10 @@ EOF
 DRY_RUN=0
 ADOPT=0
 OVERWRITE=0
-REINSTALL_TOOLS=0
+REINSTALL=0
 declare -a BOOTSTRAP_PACKAGES=()
 
+# Parse and validate package IDs before running any setup.
 while (($#)); do
   case "$1" in
     -n|--dry-run)
@@ -73,8 +65,8 @@ while (($#)); do
       OVERWRITE=1
       shift
       ;;
-    --reinstall-tools)
-      REINSTALL_TOOLS=1
+    -r|--reinstall)
+      REINSTALL=1
       shift
       ;;
     -h|--help)
@@ -89,31 +81,48 @@ while (($#)); do
   esac
 done
 
+if [[ "$REINSTALL" == 1 ]] && ((${#BOOTSTRAP_PACKAGES[@]} == 0)); then
+  printf 'bootstrap: --reinstall requires at least one --package (for example: --reinstall --package jq)\n' >&2
+  exit 1
+fi
+
 if ((${#BOOTSTRAP_PACKAGES[@]})); then
   if ! registry_validate "${BOOTSTRAP_PACKAGES[@]}"; then
     usage >&2
     exit 1
   fi
   declare -a canonical_packages=()
+
   for requested in "${BOOTSTRAP_PACKAGES[@]}"; do
     canonical_packages+=("$(registry_resolve "$requested")")
   done
   BOOTSTRAP_PACKAGES=("${canonical_packages[@]}")
-
-  for ((package_index = 0; package_index < ${#BOOTSTRAP_PACKAGES[@]}; package_index++)); do
-    selected_package="${BOOTSTRAP_PACKAGES[package_index]}"
-    registry_load_unit "$selected_package"
-    if ((${#REGISTRY_PACKAGE_DEPENDENCIES[@]})); then
-      for required_package in "${REGISTRY_PACKAGE_DEPENDENCIES[@]}"; do
-        required_package="$(registry_resolve "$required_package")"
-        case " ${BOOTSTRAP_PACKAGES[*]} " in
-          *" $required_package "*) ;;
-          *) BOOTSTRAP_PACKAGES+=("$required_package") ;;
-        esac
-      done
-    fi
-  done
 fi
+
+BOOTSTRAP_REINSTALL_PACKAGES=
+if [[ "$REINSTALL" == 1 ]]; then
+  BOOTSTRAP_REINSTALL_PACKAGES="${BOOTSTRAP_PACKAGES[*]}"
+fi
+
+# The baseline and transitive dependencies are selected for every run.
+case " ${BOOTSTRAP_PACKAGES[*]-} " in
+  *' __core__ '*) ;;
+  *) BOOTSTRAP_PACKAGES+=(__core__) ;;
+esac
+
+for ((package_index = 0; package_index < ${#BOOTSTRAP_PACKAGES[@]}; package_index++)); do
+  selected_package="${BOOTSTRAP_PACKAGES[package_index]}"
+  registry_load_unit "$selected_package"
+  if ((${#REGISTRY_PACKAGE_DEPENDENCIES[@]})); then
+    for required_package in "${REGISTRY_PACKAGE_DEPENDENCIES[@]}"; do
+      required_package="$(registry_resolve "$required_package")"
+      case " ${BOOTSTRAP_PACKAGES[*]} " in
+        *" $required_package "*) ;;
+        *) BOOTSTRAP_PACKAGES+=("$required_package") ;;
+      esac
+    done
+  fi
+done
 
 if [[ "$ADOPT" == "1" && "$OVERWRITE" == "1" ]]; then
   printf 'bootstrap: --adopt and --overwrite cannot be used together\n' >&2
@@ -123,39 +132,36 @@ fi
 export DRY_RUN
 export ADOPT
 export OVERWRITE
-export REINSTALL_TOOLS
+export BOOTSTRAP_REINSTALL_PACKAGES
 export BOOTSTRAP_PACKAGES="${BOOTSTRAP_PACKAGES[*]-}"
 selected_packages="$BOOTSTRAP_PACKAGES"
 
-if bootstrap_package_mode; then
-  scripts=(setup-tools.sh setup-stow.sh)
-  if bootstrap_package_selected micro; then
-    scripts+=(setup-micro.sh)
-  fi
-  if bootstrap_package_selected tmux; then
-    scripts+=(setup-tmux.sh)
-  fi
-  if bootstrap_package_selected treemux; then
-    scripts+=(setup-treemux.sh)
-  fi
-  if bootstrap_package_selected nvim; then
-    scripts+=(setup-nvim.sh)
-  fi
-  if bootstrap_package_selected pi; then
-    scripts+=(setup-pi.sh)
-  fi
-else
-  scripts=(
-    setup-wsl.sh
-    setup-tools.sh
-    setup-stow.sh
-    setup-micro.sh
-    setup-tmux.sh
-    setup-treemux.sh
-    setup-nvim.sh
-    setup-pi.sh
-    setup-postinstall.sh
-  )
+# Run package-specific setup only when its owner was selected.
+scripts=()
+if registry_hook_selected setup-wsl; then
+  scripts+=(setup-wsl.sh)
+fi
+
+scripts+=(setup-tools.sh setup-stow.sh)
+
+if bootstrap_package_selected micro; then
+  scripts+=(setup-micro.sh)
+fi
+
+if bootstrap_package_selected tmux; then
+  scripts+=(setup-tmux.sh)
+fi
+
+if bootstrap_package_selected treemux; then
+  scripts+=(setup-treemux.sh)
+fi
+
+if bootstrap_package_selected nvim; then
+  scripts+=(setup-nvim.sh)
+fi
+
+if bootstrap_package_selected pi; then
+  scripts+=(setup-pi.sh)
 fi
 
 for script in "${scripts[@]}"; do
