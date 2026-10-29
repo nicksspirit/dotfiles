@@ -7,7 +7,7 @@ from pathlib import Path
 project_root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(project_root / "skillx-cli" / "src"))
 
-from skillx.main import main  # noqa: E402
+from skillx.main import main  # noqa: I001
 
 
 if __name__ == "__main__":
