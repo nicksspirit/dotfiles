@@ -10,6 +10,9 @@ read_only = " 󰌾"
 symbol = "  "
 disabled = true
 
+[gcloud]
+disabled = true
+
 [buf]
 symbol = " "
 

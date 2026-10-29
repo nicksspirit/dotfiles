@@ -3,6 +3,7 @@
     "fzfarg": "--preview 'batcat -f -p {}'",
     "fzfopen": "newtab",
     "fzfpath": "relative",
+    "clipboard": "terminal",
     "mkparents": true,
     "pluginrepos": [
         "https://raw.githubusercontent.com/weebi/micro-preview/master/repo.json",
