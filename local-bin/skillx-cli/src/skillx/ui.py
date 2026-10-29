@@ -49,6 +49,7 @@ def progress_line(
 ) -> None:
     """Render one progress position, in place only for an interactive TTY."""
     line = f"[{current}/{total}] {message}"
+
     if interactive:
         stream.write(f"\r{ERASE_LINE}{DIM}{line}{RESET}")
         stream.flush()
@@ -58,6 +59,7 @@ def progress_line(
 
 def skill_reference(source: str, skill: str) -> str:
     """Render a source-qualified skill without shell-redirection syntax."""
+
     return f"{source}: {skill}"
 
 
@@ -74,23 +76,28 @@ class Renderer:
     def render(self, events: Iterable[ExecutionEvent], *, json_output: bool) -> int:
         start_time = time.time()
         report: Report | None = None
-        for event in events:
 
+        for event in events:
             if json_output:
                 if event.kind is EventKind.FAILED:
                     self._diagnose_failure(event)
+
                 if event.kind is EventKind.COMPLETE and event.report is not None:
                     report = event.report
+
                     if self.verbosity:
                         self._diagnose_report(report)
+
                 continue
 
             self._render_human(event)
+
             if event.kind is EventKind.COMPLETE:
                 report = event.report
 
         if report is None:
             report = Report(Operation.UNKNOWN, Result.FAILED, "", ())
+
         if json_output:
             json.dump(report.to_dict(), self.stdout, sort_keys=True)
             self.stdout.write("\n")
@@ -106,11 +113,15 @@ class Renderer:
             self._finish_progress()
             phase(self.stdout, self._message(event), interactive=self.interactive)
         elif event.kind is EventKind.PROGRESS:
-            # We now treat PROGRESS as a data collection event for the final list
-            # instead of an immediate line print.
-            pass
+            progress_line(
+                self.stdout,
+                event.current or 0,
+                event.total or 0,
+                self._message(event),
+                interactive=self.interactive,
+            )
+            self.progress_open = self.interactive
         elif event.kind is EventKind.MUTATION or event.kind is EventKind.BLOCKED:
-
             self._finish_progress()
             self._line(self._message(event))
         elif event.kind is EventKind.FAILED:
@@ -119,45 +130,33 @@ class Renderer:
             self._diagnose_failure(event)
         elif event.kind is EventKind.COMPLETE and event.report is not None:
             self._finish_progress()
-            self._render_skills_list(event.report)
             self._findings(event.report)
             self._summary(event.report)
+
             if self.verbosity:
                 self._diagnose_report(event.report)
 
-
     def _message(self, event: ExecutionEvent) -> str:
         emoji = EMOJI.get(event.action) if event.action is not None else None
+
         if emoji is None and event.kind is EventKind.FAILED:
             emoji = "❌"
+
         return f"{emoji} {event.message}" if emoji else event.message
-
-    def _render_skills_list(self, report: Report) -> None:
-        """Render skills grouped by source."""
-        if not report.entries:
-            return
-
-        sources: dict[str, list[str]] = {}
-        for entry in report.entries:
-            sources.setdefault(entry.source, []).append(entry.skill)
-
-        for source, skills in sorted(sources.items()):
-            self._line(f"{BLUE_BOLD}{source}{RESET}")
-            for skill in sorted(skills):
-                self._line(f"  - {skill}")
 
     def _summary(self, report: Report) -> None:
         planned = report.planned_changes
+
         if report.result is Result.FAILED:
             if report.failure_state is FailureState.ROLLED_BACK:
                 self._line("Changes were rolled back safely.")
             elif report.failure_state is FailureState.RECOVERY_REQUIRED:
-                self._line(
-                    "Rollback failed, so manual recovery may be needed."
-                )
+                self._line("Rollback failed, so manual recovery may be needed.")
             else:
                 self._line("No changes were made.")
+
             return
+
         if report.result is Result.DRIFT:
             unavailable = sum(
                 entry.status is not Status.VALID for entry in report.entries
@@ -166,9 +165,12 @@ class Renderer:
             self._line(
                 f"⚠ Check completed: {unavailable} requested {noun} unavailable."
             )
+
             return
+
         if report.result is Result.BLOCKED:
             return
+
         if report.result is Result.PLANNED:
             if report.dry_run:
                 self._line(
@@ -178,26 +180,41 @@ class Renderer:
                 self._line(
                     f"✨ Plan ready; {planned} change(s) require confirmation; nothing was changed."
                 )
+
             return
+
         if report.operation is Operation.CHECK and report.result is Result.OK:
             self._line(
                 f"✨ All {len(report.entries)} requested skills are available from their sources."
             )
+
             return
+
         if report.operation is Operation.SYNC and report.result is Result.OK:
             self._line("✨ No requested skills; nothing changed.")
+
             return
+
         if report.operation is Operation.REPAIR and report.result is Result.OK:
             self._line("✨ No confirmed-invalid lock entries; lockfile unchanged.")
+
             return
+
         if report.operation is Operation.ADOPT and report.result is Result.OK:
             self._line("✨ No requested skills to adopt; ownership ledger unchanged.")
+
             return
+
         if report.operation is Operation.PRUNE and report.result is Result.OK:
-            self._line("✨ No managed skills require pruning; ownership ledger unchanged.")
+            self._line(
+                "✨ No managed skills require pruning; ownership ledger unchanged."
+            )
+
             return
+
         if report.result is Result.OK:
             self._line("✨ No changes needed.")
+
             return
 
         action = {
@@ -211,6 +228,7 @@ class Renderer:
 
     def _findings(self, report: Report) -> None:
         """Show actionable drift without turning successful checks into a listing."""
+
         if report.result in {Result.BLOCKED, Result.DRIFT}:
             findings = tuple(
                 entry for entry in report.entries if entry.status is not Status.VALID
@@ -230,10 +248,15 @@ class Renderer:
             findings = tuple(
                 entry for entry in report.entries if entry.status is Status.PRUNABLE
             )
-        elif report.operation is Operation.ADOPT or report.operation is Operation.SYNC and report.result is Result.PLANNED:
+        elif (
+            report.operation is Operation.ADOPT
+            or report.operation is Operation.SYNC
+            and report.result is Result.PLANNED
+        ):
             findings = report.entries
         else:
             return
+
         if not findings:
             return
 
@@ -255,12 +278,11 @@ class Renderer:
                 if report.result is Result.CHANGED
                 else "Planned changes:"
             )
+
         self._line(heading)
+
         if report.operation is Operation.SYNC and report.result is Result.PLANNED:
             self._sync_plan(findings)
-        elif report.operation is Operation.ADOPT:
-            # Group adopts by source for clearer output
-            self._adopt_plan_output(findings)
         else:
             for entry in findings:
                 marker = "✓" if report.operation is Operation.ADOPT else "✗"
@@ -303,13 +325,14 @@ class Renderer:
                 for entry in report.entries
                 if entry.status is Status.INDETERMINATE
             )
+
             if remaining:
                 self._line("Still unresolved:")
+
                 for entry in remaining:
-                    self._line(
-                        f"  ✗ {skill_reference(entry.source, entry.skill)}"
-                    )
+                    self._line(f"  ✗ {skill_reference(entry.source, entry.skill)}")
                     self._line(f"    {entry.message}")
+
                 self._line(
                     "Next: retry when source access is available; indeterminate entries are preserved."
                 )
@@ -317,6 +340,7 @@ class Renderer:
     def _sync_plan(self, entries: tuple[Entry, ...]) -> None:
         """Render dry-run installations as compact, source-grouped rows."""
         skills_by_source: dict[str, list[str]] = {}
+
         for entry in entries:
             skills_by_source.setdefault(entry.source, []).append(entry.skill)
 
@@ -324,20 +348,11 @@ class Renderer:
             visible = skills if self.verbosity else skills[:COMPACT_SKILLS_PER_SOURCE]
             suffix = ""
             remaining = len(skills) - len(visible)
+
             if remaining:
                 suffix = f" … (+{remaining} more)"
-            self._line(f"  📦 {source}: {', '.join(visible)}{suffix}")
 
-    def _adopt_plan_output(self, findings: tuple[Entry, ...]) -> None:
-        """Print adopted ownership plan grouped by source for clearer readability."""
-        groups: dict[str, list[Entry]] = {}
-        for entry in findings:
-            groups.setdefault(entry.source, []).append(entry)
-        for src, entries in groups.items():
-            self._line(f"{src}:")
-            for e in entries:
-                path = f"/home/nmuoh/.agents/skills/{e.skill}"
-                self._line(f"  - {e.skill} -> {path}")
+            self._line(f"  📦 {source}: {', '.join(visible)}{suffix}")
 
     def _next_step_for_blocked(self, findings: tuple[Entry, ...]) -> None:
         statuses = {entry.status for entry in findings}
@@ -350,6 +365,7 @@ class Renderer:
                 Status.CONFIRMED_INVALID_SOURCE,
             }
         )
+
         if repairable and indeterminate:
             self._line(
                 "Next: `skillx repair` previews removal of confirmed-invalid entries; retry or fix access for the others."
@@ -378,9 +394,12 @@ class Renderer:
     def _diagnose_failure(self, event: ExecutionEvent) -> None:
         if self.verbosity < 1:
             return
+
         self.stderr.write(f"skillx: {event.message}\n")
+
         if event.diagnostic:
             self.stderr.write(event.diagnostic.rstrip() + "\n")
+
         if self.verbosity > 1 and event.debug:
             self.stderr.write(event.debug)
 
@@ -388,6 +407,7 @@ class Renderer:
         for entry in report.entries:
             if not entry.diagnostic:
                 continue
+
             self.stderr.write(f"{skill_reference(entry.source, entry.skill)}:\n")
             self.stderr.writelines(
                 f"  {line}\n" for line in entry.diagnostic.splitlines()
@@ -396,4 +416,5 @@ class Renderer:
 
 def _is_tty(stream: TextIO) -> bool:
     isatty = getattr(stream, "isatty", None)
+
     return bool(isatty and isatty())
