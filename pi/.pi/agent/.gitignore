@@ -1,2 +1,19 @@
-.pi/
-model-filter.local.json
+# Pi writes runtime state and installs under this directory. Track only explicit config.
+/*
+!/.gitignore
+!/extensions/
+/extensions/*
+!/extensions/pi-minimal-statusline.disable
+!/extensions/pi-model-filter.ts
+!/extensions/pi-tmux-agent-indicator.ts
+!/model-filter.json
+!/models.json
+!/npm/
+/npm/*
+!/npm/.gitignore
+!/npm/package.json
+!/npm/patches/
+/npm/patches/*
+!/npm/patches/pi-web-access+0.46.0.patch
+!/pi-btw.json
+!/settings.json
