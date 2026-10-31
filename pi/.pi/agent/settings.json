@@ -41,6 +41,6 @@
   },
   "fullscreenExitOutput": "transcript",
   "fullscreenScrollbar": "auto",
-  "tuiMode": "fullscreen"
+  "tuiMode": "fullscreen",
+  "deviceId": "279e20cf-e9b2-4c94-a83d-b3f65e0b241b"
 }
-
