@@ -183,11 +183,14 @@ export function findProjectConfig(cwd: string): string {
   }
 }
 
-export function loadLayeredConfig(globalPath: string, projectPath: string, log: Logger): FilterConfig {
+export function loadLayeredConfig(globalPath: string, projectPath: string, log: Logger, localPath = globalPath.replace(/\.json$/, ".local.json")): FilterConfig {
   const global = loadConfig(globalPath, log);
-  if (!existsSync(projectPath)) return global;
-  const project = loadConfig(projectPath, log);
-  return { rules: [...project.rules, ...global.rules], defaultAction: global.defaultAction };
+  const local = existsSync(localPath) ? loadConfig(localPath, log) : undefined;
+  const project = existsSync(projectPath) ? loadConfig(projectPath, log) : undefined;
+  return {
+    rules: [...(project?.rules ?? []), ...(local?.rules ?? []), ...global.rules],
+    defaultAction: local?.defaultAction ?? global.defaultAction,
+  };
 }
 
 export function createConfigStore(path: string, log: Logger): ConfigStore {
@@ -464,13 +467,14 @@ export default async function piModelFilter(pi: any): Promise<void> {
     const logForSession = sessionLogger(log, context);
     const cwd = (context as SessionContext)?.cwd ?? process.cwd();
     const projectPath = findProjectConfig(cwd);
-    const configPaths = [globalPath, projectPath];
-    store.replace(loadLayeredConfig(globalPath, projectPath, logForSession));
+    const localPath = globalPath.replace(/\.json$/, ".local.json");
+    const configPaths = [globalPath, localPath, projectPath];
+    store.replace(loadLayeredConfig(globalPath, projectPath, logForSession, localPath));
     watcher = startConfigWatcher(
       store,
       logForSession,
       configPaths,
-      () => loadLayeredConfig(globalPath, projectPath, logForSession),
+      () => loadLayeredConfig(globalPath, projectPath, logForSession, localPath),
     );
   });
   pi.on?.("session_shutdown", () => {

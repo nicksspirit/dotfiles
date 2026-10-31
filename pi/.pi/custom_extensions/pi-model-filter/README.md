@@ -10,7 +10,13 @@ This repository deploys the extension through the `pi` Stow package. The stowed 
 
 ## Configuration
 
-Use `~/.pi/model-filter.json` for global rules and `<project>/.pi/model-filter.json` for project rules. Project rules are evaluated first; unmatched models fall through to global rules, whose `defaultAction` is retained. The tracked Stow config at `~/.pi/agent/model-filter.json` is intentionally empty and does not impose a shared model policy.
+Configuration files, from highest to lowest rule priority:
+
+- `<project>/.pi/model-filter.json` — project-specific rules.
+- `~/.pi/agent/model-filter.local.json` — machine-local rules; ignored by git.
+- `~/.pi/model-filter.json` — global rules.
+
+The first matching rule wins. The local file's `defaultAction` overrides the global one when set; otherwise the global default applies.
 
 ### Schema
 
@@ -42,7 +48,7 @@ interface FilterConfig {
 
 ### Examples
 
-Model IDs and providers available to Pi vary by machine. Put machine-specific rules in `~/.pi/model-filter.json` and project-specific rules in `<project>/.pi/model-filter.json`. For example, to show only OpenAI GPT-6-family IDs globally:
+Model IDs and providers vary by machine. To show only OpenAI GPT-6-family models, put these rules in `~/.pi/agent/model-filter.local.json`:
 
 ```json
 {

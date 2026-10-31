@@ -33,7 +33,6 @@
   },
   "lastChangelogVersion": "1.4.0",
   "defaultProvider": "amazon-bedrock",
-  "defaultModel": "us.anthropic.claude-sonnet-5",
   "defaultThinkingLevel": "medium",
   "env": {
     "FFF_ENABLE_HOME_SCAN": "0",
@@ -45,3 +44,4 @@
   "fullscreenScrollbar": "auto",
   "tuiMode": "fullscreen"
 }
+
