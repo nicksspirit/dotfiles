@@ -470,6 +470,7 @@ registry_load_unit() {
     REGISTRY_ID=tmux-cpu-mem-monitor
     REGISTRY_PACKAGE_DEPENDENCIES=(tmux uv)
     REGISTRY_STOW_PACKAGE=tmux-cpu-mem-monitor
+    REGISTRY_STOW_ARGS=(--no-folding)
     ;;
 
   local-bin)

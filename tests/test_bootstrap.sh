@@ -106,7 +106,7 @@ test_transitive_dependencies() {
   local output expected
   local expected_items=('ca-certificates curl stow' 'git patch' 'xclip build-essential ripgrep'
     'fastfetch' 'stow -nv tmux' 'stow -nv fzf' 'stow -nv local-bin'
-    'stow -nv nvim' 'stow -nv treemux' 'stow -nv tmux-cpu-mem-monitor' 'uv venv')
+    'stow -nv nvim' 'stow -nv treemux' 'stow -nv --no-folding tmux-cpu-mem-monitor' 'uv venv')
 
   # Act
   output="$("$repo_root/bootstrap.sh" --dry-run -p treemux -p tmux-cpu-mem-monitor)"

@@ -9,6 +9,7 @@ The `tmux` package manages `~/.tmux.conf` and configures TPM plugins.
 - The Nord styled status bar shows prefix highlighting, CPU/MEM metrics, the battery icon and percentage (⚡ while charging), and tmux-agent-indicator session markers; numbered icons mark idle sessions.
 - `tmux-menus` provides popup menus; `tmux-fzf` provides interactive selectors.
 - Package-scoped bootstrap of `tmux` selects `fzf` and `local-bin`, and installs Git and `patch` for plugin setup.
+- Before installing plugins, `scripts/setup-tmux.sh` checks the physical plugin directory and refuses to run TPM if it resolves inside the dotfiles checkout. This prevents downloads through older folded Stow links; see the [monitor deployment notes](tmux-cpu-mem-monitor.md#deployment).
 
 Reload a running server with `tmux source-file ~/.tmux.conf`; never run `tmux kill-server` inside a session.
 

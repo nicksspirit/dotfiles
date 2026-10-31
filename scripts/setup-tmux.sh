@@ -39,7 +39,17 @@ if ! is_dry_run; then
   need_cmd patch
 fi
 
-repo_root="$(bootstrap_root)"
+repo_root="$(cd "$(bootstrap_root)" && pwd -P)"
+for plugins_dir in "$HOME/.tmux" "$HOME/.tmux/plugins"; do
+  if ! is_dry_run && [[ -d "$plugins_dir" ]]; then
+    plugins_root="$(cd "$plugins_dir" && pwd -P)"
+    case "$plugins_root/" in
+      "$repo_root/"*)
+        die "tmux plugin directory resolves inside the dotfiles repository: $plugins_root; preserve and migrate installed plugins out of the repository before retrying"
+        ;;
+    esac
+  fi
+done
 indicator_dir="$HOME/.tmux/plugins/tmux-agent-indicator"
 indicator_patch="$repo_root/tmux/patches/tmux-agent-indicator-session-dots.patch"
 
