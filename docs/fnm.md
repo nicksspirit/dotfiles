@@ -3,7 +3,8 @@
 Fast Node Manager. Installs and switches Node.js versions.
 
 `scripts/setup-stow.sh` creates `~/.fnm/`; `scripts/setup-tools.sh` installs the
-fnm binary there with its official installer. Bash initialization is stow-tracked.
+fnm binary there with its official installer. Bootstrap installs `unzip`, which fnm
+needs to extract Node.js releases. Bash initialization is stow-tracked.
 
 ## Important configuration paths
 

@@ -394,6 +394,7 @@ registry_load_unit() {
 
   fnm)
     REGISTRY_ID=fnm
+    REGISTRY_APT_DEPENDENCIES=(unzip)
     REGISTRY_INSTALL_METHOD=installer
     REGISTRY_COMMAND=fnm
     REGISTRY_URL=https://fnm.vercel.app/install
