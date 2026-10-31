@@ -32,7 +32,6 @@
     "apiKey": "ollama"
   },
   "lastChangelogVersion": "1.4.0",
-  "defaultProvider": "amazon-bedrock",
   "defaultThinkingLevel": "medium",
   "env": {
     "FFF_ENABLE_HOME_SCAN": "0",
