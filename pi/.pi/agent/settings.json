@@ -33,6 +33,7 @@
   },
   "lastChangelogVersion": "1.4.0",
   "defaultThinkingLevel": "medium",
+  "enabledModels": ["gpt-6-luna"],
   "env": {
     "FFF_ENABLE_HOME_SCAN": "0",
     "CLAUDE_CODE_USE_BEDROCK": "1",

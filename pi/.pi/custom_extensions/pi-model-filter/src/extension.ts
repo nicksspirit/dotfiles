@@ -452,8 +452,10 @@ export default async function piModelFilter(pi: any): Promise<void> {
   }
 
   const log = factoryLogger();
-  const globalPath = join(dirname(getAgentDir()), "model-filter.json");
+  const globalPath = join(getAgentDir(), "model-filter.json");
+  const localPath = globalPath.replace(/\.json$/, ".local.json");
   const store = createConfigStore(globalPath, log);
+  store.replace(loadLayeredConfig(globalPath, findProjectConfig(process.cwd()), log, localPath));
   const registryPatch = ModelRegistry
     ? patchModelRegistryPrototype(ModelRegistry.prototype, store, log)
     : undefined;
@@ -467,7 +469,6 @@ export default async function piModelFilter(pi: any): Promise<void> {
     const logForSession = sessionLogger(log, context);
     const cwd = (context as SessionContext)?.cwd ?? process.cwd();
     const projectPath = findProjectConfig(cwd);
-    const localPath = globalPath.replace(/\.json$/, ".local.json");
     const configPaths = [globalPath, localPath, projectPath];
     store.replace(loadLayeredConfig(globalPath, projectPath, logForSession, localPath));
     watcher = startConfigWatcher(
