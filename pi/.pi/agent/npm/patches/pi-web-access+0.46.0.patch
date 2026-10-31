@@ -1,0 +1,11 @@
+diff --git a/node_modules/pi-web-access/package.json b/node_modules/pi-web-access/package.json
+--- a/node_modules/pi-web-access/package.json
++++ b/node_modules/pi-web-access/package.json
+@@ -56,7 +56,6 @@
+     "@earendil-works/pi-coding-agent": "1.0.4",
+     "@earendil-works/pi-tui": "1.0.4",
+     "@types/turndown": "^5.0.6",
+     "esbuild": "^0.28.1",
+-    "typebox": "1.3.27",
+     "typescript": "^7.0.2"
+   },

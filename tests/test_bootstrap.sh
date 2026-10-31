@@ -239,6 +239,44 @@ test_reinstall_github_alias() {
   }
 }
 
+test_pi_bootstrap_skips_installed_cli_and_extensions() {
+  # Arrange
+  local output
+  mkdir -p "$test_dir/pi-bin" "$HOME/.pi/agent/npm"
+  printf '#!/bin/sh\nexit 0\n' > "$test_dir/pi-bin/pi"
+  printf '#!/bin/sh\ncase "$1" in ls) exit 0;; *) exit 1;; esac\n' > "$test_dir/pi-bin/npm"
+  chmod +x "$test_dir/pi-bin/pi" "$test_dir/pi-bin/npm"
+
+  # Act
+  output="$(PATH="$test_dir/pi-bin:$PATH" "$repo_root/bootstrap.sh" --dry-run -p pi)"
+
+  # Assert
+  [[ "$output" == *'pi CLI already installed'* &&
+     "$output" == *'managed extension packages already installed'* &&
+     "$output" != *'https://pi.dev/install.sh'* &&
+     "$output" != *'npm install --prefix'* ]] || {
+    printf 'Pi bootstrap did not skip satisfied installs\n' >&2; return 1;
+  }
+}
+
+test_pi_reinstall_forces_cli_and_extensions() {
+  # Arrange
+  local output
+  mkdir -p "$test_dir/pi-bin" "$HOME/.pi/agent/npm"
+  printf '#!/bin/sh\nexit 0\n' > "$test_dir/pi-bin/pi"
+  printf '#!/bin/sh\nexit 0\n' > "$test_dir/pi-bin/npm"
+  chmod +x "$test_dir/pi-bin/pi" "$test_dir/pi-bin/npm"
+
+  # Act
+  output="$(PATH="$test_dir/pi-bin:$PATH" "$repo_root/bootstrap.sh" --dry-run --reinstall -p pi)"
+
+  # Assert
+  [[ "$output" == *'curl -fsSL https://pi.dev/install.sh | sh'* &&
+     "$output" == *'npm install --prefix'* ]] || {
+    printf 'Pi reinstall did not force the CLI and extension setup\n' >&2; return 1;
+  }
+}
+
 test_removed_prerequisite_id() {
   # Arrange
   local output result=0
@@ -267,4 +305,6 @@ test_reinstall_requires_package
 test_reinstall_short_option
 test_reinstall_skips_installed_dependency_tools
 test_reinstall_github_alias
+test_pi_bootstrap_skips_installed_cli_and_extensions
+test_pi_reinstall_forces_cli_and_extensions
 test_removed_prerequisite_id
