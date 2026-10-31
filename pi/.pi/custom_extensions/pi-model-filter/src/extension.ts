@@ -1,5 +1,5 @@
-import { readFileSync, watch, type FSWatcher } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, watch, type FSWatcher } from "node:fs";
+import { dirname, join } from "node:path";
 
 // ---------------------------------------------------------------------------
 // Configuration and matching
@@ -172,6 +172,24 @@ export function loadConfig(path: string, log: Logger): FilterConfig {
   return { ...FAIL_OPEN_CONFIG };
 }
 
+export function findProjectConfig(cwd: string): string {
+  let directory = cwd;
+  while (true) {
+    const path = join(directory, ".pi", "model-filter.json");
+    if (existsSync(path)) return path;
+    const parent = dirname(directory);
+    if (parent === directory) return join(cwd, ".pi", "model-filter.json");
+    directory = parent;
+  }
+}
+
+export function loadLayeredConfig(globalPath: string, projectPath: string, log: Logger): FilterConfig {
+  const global = loadConfig(globalPath, log);
+  if (!existsSync(projectPath)) return global;
+  const project = loadConfig(projectPath, log);
+  return { rules: [...project.rules, ...global.rules], defaultAction: global.defaultAction };
+}
+
 export function createConfigStore(path: string, log: Logger): ConfigStore {
   let current = loadConfig(path, log);
   return {
@@ -183,28 +201,31 @@ export function createConfigStore(path: string, log: Logger): ConfigStore {
 }
 
 export interface WatcherHandle { close(): void }
-export function startConfigWatcher(store: ConfigStore, log: Logger, path: string): WatcherHandle {
+export function startConfigWatcher(store: ConfigStore, log: Logger, path: string | string[], load: () => FilterConfig = () => loadConfig(typeof path === "string" ? path : path[0] ?? "", log)): WatcherHandle {
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let watcher: FSWatcher | undefined;
+  const watchers: FSWatcher[] = [];
+  const paths = (Array.isArray(path) ? path : [path]).filter((file) => existsSync(file));
   const reload = () => {
-    try { store.replace(loadConfig(path, log)); }
+    try { store.replace(load()); }
     catch (error: unknown) { log.warn(`pi-model-filter: config reload error: ${String(error)}`); }
   };
-  try {
-    watcher = watch(path, { persistent: false }, () => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => { timer = undefined; reload(); }, 200);
-    });
-    watcher.on("error", (error) => log.warn(`pi-model-filter: watcher error: ${String(error)}`));
-  } catch (error: unknown) {
-    log.warn(`pi-model-filter: failed to watch config: ${String(error)}`);
+  for (const file of paths) {
+    try {
+      const watcher = watch(file, { persistent: false }, () => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => { timer = undefined; reload(); }, 200);
+      });
+      watcher.on("error", (error) => log.warn(`pi-model-filter: watcher error: ${String(error)}`));
+      watchers.push(watcher);
+    } catch (error: unknown) {
+      log.warn(`pi-model-filter: failed to watch config: ${String(error)}`);
+    }
   }
   return {
     close() {
       if (timer) clearTimeout(timer);
       timer = undefined;
-      watcher?.close();
-      watcher = undefined;
+      watchers.forEach((watcher) => watcher.close());
     },
   };
 }
@@ -390,6 +411,7 @@ export function patchModelRuntimePrototype(proto: any, store: ConfigStore, log: 
 // ---------------------------------------------------------------------------
 
 type SessionContext = {
+  cwd?: string;
   ui?: {
     notify?: (message: string, level: "warning") => void;
   };
@@ -427,8 +449,8 @@ export default async function piModelFilter(pi: any): Promise<void> {
   }
 
   const log = factoryLogger();
-  const path = join(getAgentDir(), "model-filter.json");
-  const store = createConfigStore(path, log);
+  const globalPath = join(dirname(getAgentDir()), "model-filter.json");
+  const store = createConfigStore(globalPath, log);
   const registryPatch = ModelRegistry
     ? patchModelRegistryPrototype(ModelRegistry.prototype, store, log)
     : undefined;
@@ -440,7 +462,16 @@ export default async function piModelFilter(pi: any): Promise<void> {
   pi.on?.("session_start", (_event: unknown, context: unknown) => {
     watcher?.close();
     const logForSession = sessionLogger(log, context);
-    watcher = startConfigWatcher(store, logForSession, path);
+    const cwd = (context as SessionContext)?.cwd ?? process.cwd();
+    const projectPath = findProjectConfig(cwd);
+    const configPaths = [globalPath, projectPath];
+    store.replace(loadLayeredConfig(globalPath, projectPath, logForSession));
+    watcher = startConfigWatcher(
+      store,
+      logForSession,
+      configPaths,
+      () => loadLayeredConfig(globalPath, projectPath, logForSession),
+    );
   });
   pi.on?.("session_shutdown", () => {
     watcher?.close();

@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { validateConfig, type FilterConfig, type Logger } from "../extension";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { findProjectConfig, isBlocked, loadLayeredConfig, validateConfig, type FilterConfig, type Logger } from "../extension";
 
 function makeLogger(): Logger & { messages: string[] } {
   const messages: string[] = [];
@@ -8,6 +11,41 @@ function makeLogger(): Logger & { messages: string[] } {
     warn: (msg) => messages.push(msg),
   };
 }
+
+describe("loadLayeredConfig", () => {
+  it("finds project config from a nested working directory", () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-model-filter-"));
+    const projectDir = join(dir, "project");
+    const nestedDir = join(projectDir, "src");
+    const configPath = join(projectDir, ".pi", "model-filter.json");
+    mkdirSync(join(projectDir, ".pi"), { recursive: true });
+    mkdirSync(nestedDir, { recursive: true });
+    writeFileSync(configPath, "{}");
+    try {
+      expect(findProjectConfig(nestedDir)).toBe(configPath);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("uses project rules before global rules and inherits global defaultAction", () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-model-filter-"));
+    const globalPath = join(dir, "global.json");
+    const projectPath = join(dir, "project.json");
+    const log = makeLogger();
+    writeFileSync(globalPath, JSON.stringify({ rules: [{ provider: "openai", action: "block", match: { patterns: ["*"] } }], defaultAction: "block" }));
+    writeFileSync(projectPath, JSON.stringify({ rules: [{ provider: "openai", action: "allow", match: { ids: ["gpt-6"] } }] }));
+
+    try {
+      const config = loadLayeredConfig(globalPath, projectPath, log);
+      expect(isBlocked(config, { provider: "openai", id: "gpt-6" })).toBe(false);
+      expect(isBlocked(config, { provider: "openai", id: "gpt-5" })).toBe(true);
+      expect(config.defaultAction).toBe("block");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("validateConfig", () => {
   it("accepts valid minimal config", () => {

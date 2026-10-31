@@ -7,6 +7,7 @@ const mockWatch = vi.fn();
 
 vi.mock("node:fs", () => ({
   watch: (...args: any[]) => mockWatch(...args),
+  existsSync: vi.fn(() => true),
   readFileSync: vi.fn(() => '{"rules":[],"defaultAction":"allow"}'),
 }));
 

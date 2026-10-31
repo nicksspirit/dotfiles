@@ -10,7 +10,7 @@ This repository deploys the extension through the `pi` Stow package. The stowed 
 
 ## Configuration
 
-Create `model-filter.json` in pi's agent directory (typically `~/.pi/agent/model-filter.json`):
+Use `~/.pi/model-filter.json` for global rules and `<project>/.pi/model-filter.json` for project rules. Project rules are evaluated first; unmatched models fall through to global rules, whose `defaultAction` is retained. The tracked Stow config at `~/.pi/agent/model-filter.json` is intentionally empty and does not impose a shared model policy.
 
 ### Schema
 
@@ -42,40 +42,31 @@ interface FilterConfig {
 
 ### Examples
 
-**Allowlist for Copilot, leave other providers untouched:**
+Model IDs and providers available to Pi vary by machine. Put machine-specific rules in `~/.pi/model-filter.json` and project-specific rules in `<project>/.pi/model-filter.json`. For example, to show only OpenAI GPT-6-family IDs globally:
 
 ```json
 {
   "rules": [
-    {
-      "provider": "github-copilot",
-      "action": "allow",
-      "match": { "ids": ["claude-opus-4.6", "gpt-5.4", "gpt-5.5"] }
-    },
-    {
-      "provider": "github-copilot",
-      "action": "block",
-      "match": { "patterns": ["*"] }
-    }
+    { "provider": "openai", "action": "allow", "match": { "patterns": ["gpt-6*"] } },
+    { "provider": "openai", "action": "block", "match": { "patterns": ["*"] } }
   ],
   "defaultAction": "allow"
 }
 ```
 
-**Strict global allowlist:**
+To show only cloud-backed Ollama models in a project, leaving other providers untouched, save this as `<project>/.pi/model-filter.json`:
 
 ```json
 {
   "rules": [
-    {
-      "provider": "github-copilot",
-      "action": "allow",
-      "match": { "ids": ["claude-opus-4.6", "gpt-5.4", "gpt-5.5"] }
-    }
+    { "provider": "ollama", "action": "allow", "match": { "patterns": ["*-cloud"] } },
+    { "provider": "ollama", "action": "block", "match": { "patterns": ["*"] } }
   ],
-  "defaultAction": "block"
+  "defaultAction": "allow"
 }
 ```
+
+To restrict all providers, use a global block rule after the provider-specific allow rules and set `defaultAction` to `block`.
 
 **Block non-reasoning models:**
 
@@ -107,7 +98,7 @@ The extension patches both `ModelRuntime.prototype` and the compatibility `Model
 
 - **Missing or invalid config**: all models pass through, warning logged.
 - **pi internals change**: extension detects missing methods and disables itself with a warning.
-- **Hot reload**: editing `model-filter.json` takes effect without restarting pi.
+- **Hot reload**: edits to existing global or project `model-filter.json` files take effect without restarting pi. Start a new Pi session after creating a previously absent project config.
 
 ## Development
 
