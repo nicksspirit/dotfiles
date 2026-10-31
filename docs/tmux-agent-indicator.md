@@ -11,6 +11,20 @@
 The extension is silent when the plugin is absent and does not block Pi while
 calling `agent-state.sh`.
 
+## Window tab styling
+
+`tmux/.tmux.conf` overrides Nord's window formats after TPM loads the theme.
+The label inherits `window-status-style` or `window-status-current-style`;
+the arrow separators extract the same style's background color. This lets the
+plugin color the whole tab yellow for `needs-input` or red for `done`, instead
+of leaving Nord's hard-coded grey label inside a colored edge. Pane background
+coloring remains disabled by default.
+
+The plugin restores the window styles when attention is acknowledged or a new
+turn starts. Ordinary inactive tabs use white on grey; the current tab uses
+black on cyan. `bash tests/test_tmux_window_status.sh` checks both tab formats
+for ordinary, attention, and restored styles in an isolated tmux server.
+
 ## Add more numbered idle icons
 
 Numbered icons are assigned by tmux session order. To add more:
