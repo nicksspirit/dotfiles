@@ -32,7 +32,7 @@ test_setup_scripts_are_executable() {
 test_default_baseline() {
   # Arrange
   local output unexpected
-  local baseline='sudo apt-get install -y ca-certificates curl stow fastfetch'
+  local baseline='sudo apt-get install -y ca-certificates curl stow zip unzip fastfetch'
 
   # Act
   output="$(WSL_DISTRO_NAME=test "$repo_root/bootstrap.sh" --dry-run)"
@@ -133,7 +133,7 @@ test_zip_dependencies() {
 test_core_baseline() {
   # Arrange
   local output
-  local baseline='sudo apt-get install -y ca-certificates curl stow fastfetch'
+  local baseline='sudo apt-get install -y ca-certificates curl stow zip unzip fastfetch'
 
   # Act
   output="$("$repo_root/bootstrap.sh" --dry-run -p core)"
@@ -165,7 +165,7 @@ test_wifi_package() {
   output="$("$repo_root/bootstrap.sh" --dry-run -p wifi)"
 
   # Assert
-  [[ "$output" == *'sudo apt-get install -y network-manager net-tools wpasupplicant wireless-regdb ca-certificates curl stow fastfetch'* && "$output" != *'stow -nv'* ]] || {
+  [[ "$output" == *'sudo apt-get install -y network-manager net-tools wpasupplicant wireless-regdb ca-certificates curl stow zip unzip fastfetch'* && "$output" != *'stow -nv'* ]] || {
     printf 'Wi-Fi package did not include its networking tools and backend dependencies\n' >&2; return 1;
   }
 }
@@ -213,7 +213,7 @@ test_reinstall_short_option() {
   output="$("$repo_root/bootstrap.sh" --dry-run -r -p jq -p yq)"
 
   # Assert
-  [[ "$output" == *'sudo apt-get install -y --reinstall jq yq'* && "$output" == *'sudo apt-get install -y ca-certificates curl stow fastfetch'* ]] || {
+  [[ "$output" == *'sudo apt-get install -y --reinstall jq yq'* && "$output" == *'sudo apt-get install -y ca-certificates curl stow zip unzip fastfetch'* ]] || {
     printf 'short option did not target both packages\n' >&2; return 1;
   }
 }

@@ -109,7 +109,7 @@ registry_load_unit() {
     REGISTRY_ID=__core__
     REGISTRY_ALIASES=(core)
     REGISTRY_INSTALL_METHOD=apt
-    REGISTRY_INSTALL_NAMES=(ca-certificates curl stow)
+    REGISTRY_INSTALL_NAMES=(ca-certificates curl stow zip unzip)
     REGISTRY_PACKAGE_DEPENDENCIES=(fastfetch)
     ;;
 
