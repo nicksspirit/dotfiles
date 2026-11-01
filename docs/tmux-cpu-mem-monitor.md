@@ -28,13 +28,14 @@ deployments without touching the user's home directory.
 
 The wrapper manages the CPU/MEM/battery `status-right` segment:
 
-- Replaces CPU, memory, disk, and battery placeholders.
+- Publishes CPU, memory, and battery readings to tmux options through one persistent Python sampler, approximately every 5 seconds. Reloading the tmux config leaves the existing sampler running; it exits when its tmux server stops.
+- Replaces CPU, memory, disk, and battery placeholders outside its own status segment.
 - Preserves the `tmux-prefix-highlight` and agent-indicator placeholders.
 - Shows the configured battery icon and percentage, ⚡ while charging, or `N/A` when no battery is available.
 
 ## Python environment
 
-- Metrics run with Python 3.14 from `~/.local/share/tmux-cpu-mem-monitor-venv/`.
+- Metrics run with Python 3.14 from `~/.local/share/tmux-cpu-mem-monitor-venv/`; the status sampler keeps one interpreter and `psutil` instance alive instead of launching three Python processes on each redraw.
 - Each run of `scripts/setup-tmux.sh` recreates the environment with `uv venv --clear` and syncs the locked `psutil==6.0.0` dependency from the plugin's `uv.lock`.
 - The old plugin-local `.venv` is unused and can be removed.
 

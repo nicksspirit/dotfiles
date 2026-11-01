@@ -31,7 +31,7 @@ set_status_right() {
     local -r mem_icon="$(tmux_option '@cpu_mem_mem_icon' '')"
     local -r battery_icon="$(tmux_option '@cpu_mem_battery_icon' '󰁹')"
 
-    tmux set-option -gq status-right "#{prefix_highlight}${lead_style}${metric_style} ${cpu_icon} #{cpu} ${separator}${metric_style} ${mem_icon} #{mem} ${separator}${metric_style} #{battery -p --icon ${battery_icon}} ${separator}${metric_style} #{agent_session_dots}  #{agent_indicator} #[default]"
+    tmux set-option -gq status-right "#{prefix_highlight}${lead_style}${metric_style} ${cpu_icon} #{@cpu_mem_cpu} ${separator}${metric_style} ${mem_icon} #{@cpu_mem_mem} ${separator}${metric_style} #{@cpu_mem_battery} ${separator}${metric_style} #{agent_session_dots}  #{agent_indicator} #[default]"
 }
 
 update_placeholder() {
@@ -56,6 +56,7 @@ update_placeholder() {
 main() {
     require_monitor_python
     set_status_right
+    tmux run-shell -b "\"$MONITOR_PYTHON\" \"$CURRENT_DIR/src/status_daemon.py\" #{q:socket_path}"
 
     local option
     for option in "status-right" "status-left" "status-format[0]" "status-format[1]"; do
