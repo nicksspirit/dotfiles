@@ -144,6 +144,19 @@ test_core_baseline() {
   }
 }
 
+test_btop_package() {
+  # Arrange
+  local output
+
+  # Act
+  output="$("$repo_root/bootstrap.sh" --dry-run -p btop)"
+
+  # Assert
+  [[ "$output" == *'apt-get install -y btop'* && "$output" == *'stow -nv btop'* ]] || {
+    printf 'btop package did not install and stow its configuration\n' >&2; return 1;
+  }
+}
+
 test_wifi_package() {
   # Arrange
   local output
@@ -299,6 +312,7 @@ test_1password_dependencies
 test_transitive_dependencies
 test_zip_dependencies
 test_core_baseline
+test_btop_package
 test_wifi_package
 test_reinstall_selected_package
 test_reinstall_requires_package

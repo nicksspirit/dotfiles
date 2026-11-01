@@ -2,6 +2,8 @@
 
 `jq` and `yq` are canonical bootstrap IDs for standard command-line utilities. They are installed from apt by the Bash-only registry in `scripts/package-registry.sh` and have no tracked configuration or shell initialization. Select jq with `./bootstrap.sh --package jq` (or select `yq` separately); the baseline is also installed.
 
+`btop` is an apt-installed bootstrap ID with its configuration managed by the `btop` Stow package. Select it with `./bootstrap.sh --package btop`; the package deploys `~/.config/btop/btop.conf`. See [`btop.md`](btop.md).
+
 The AWS CLI has canonical ID `aws-cli` and alias `aws`; it is installed from Snap with `--classic`, and its binary is `/snap/bin/aws`. Installer metadata is centralized in the registry while installation implementations remain in `scripts/setup-tools.sh`.
 
 `wifi` is the single selectable bootstrap ID for networking tools in `scripts/package-registry.sh`, installed by `scripts/setup-tools.sh`. It installs `network-manager`, `net-tools`, `wpasupplicant`, and `wireless-regdb` together. NetworkManager provides `nmcli` and the terminal interface `nmtui`; `net-tools` provides diagnostics such as `ifconfig`, `route`, and `netstat`. The `wifi` package has no Stow configuration and is not part of the automatic baseline. Select it with `./bootstrap.sh --package wifi` instead of separate networking package IDs.

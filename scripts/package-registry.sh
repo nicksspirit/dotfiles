@@ -28,6 +28,7 @@
 
 REGISTRY_UNIT_IDS=(
   __core__
+  btop
   fastfetch
   wsl
   ssh-server
@@ -204,6 +205,13 @@ registry_load_unit() {
     REGISTRY_ID=htop
     REGISTRY_INSTALL_METHOD=apt
     REGISTRY_INSTALL_NAMES=(htop)
+    ;;
+
+  btop)
+    REGISTRY_ID=btop
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(btop)
+    REGISTRY_STOW_PACKAGE=btop
     ;;
 
   starship)
