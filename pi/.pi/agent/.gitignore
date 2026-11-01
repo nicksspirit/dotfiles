@@ -1,6 +1,11 @@
 # Pi writes runtime state and installs under this directory. Track only explicit config.
 /*
 !/.gitignore
+!/AGENTS.md
+!/agents/
+/agents/*
+!/agents/delegate.md
+!/agents/scout.md
 !/extensions/
 /extensions/*
 !/extensions/pi-minimal-statusline.disable
