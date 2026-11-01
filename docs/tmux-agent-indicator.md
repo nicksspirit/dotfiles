@@ -3,13 +3,16 @@
 `tmux-agent-indicator` is configured in this repository:
 
 - `tmux/.tmux.conf` configures the plugin through TPM, appends its placeholders after the CPU/MEM wrapper, uses numbered icons (`➊`–`➎`) for idle sessions, and configures Pi (`π`), Cortex, Coco, and Copilot process fallback. `scripts/setup-tmux.sh` installs TPM and its plugins.
-- `tmux/patches/tmux-agent-indicator-session-dots.patch` extends the upstream session-dot script with numbered idle-session markers and worker states, handles stale seen-session markers without blanking the segment, and clears `needs-input` once its source pane is focused; `scripts/setup-tmux.sh` applies it after TPM installation.
+- `tmux/patches/tmux-agent-indicator-session-dots.patch` extends the upstream session-dot script with numbered idle-session markers and worker states, handles stale seen-session markers without blanking the segment, and batches option reads and marker formatting to reduce child processes per status redraw. `scripts/setup-tmux.sh` applies it after TPM installation; the patch is not active until plugin setup runs. Pane focus handling remains upstream.
 - `tmux-cpu-mem-monitor/.tmux/plugins/tmux-cpu-mem-monitor/tmux_cpu_mem_monitor.tmux` preserves the Nord CPU/MEM segment while carrying the indicator placeholders to the final interpolation step.
 - `pi/pi-tmux-agent-indicator/` contains the Stow-managed Pi extension.
 - `pi/.pi/agent/extensions/pi-tmux-agent-indicator.ts` is the deployed extension entrypoint.
 
 The extension is silent when the plugin is absent and does not block Pi while
-calling `agent-state.sh`.
+calling `agent-state.sh`. The patched dots script reads the configured options
+in two tmux calls (presence and values) instead of up to two calls per option.
+Pane-state lookups still require one tmux call per tracked pane; custom options
+containing newlines are not supported by the batched value format.
 
 ## Window tab styling
 

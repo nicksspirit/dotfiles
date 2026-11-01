@@ -63,18 +63,13 @@ fi
 # with numbered idle sessions plus running and done states so worker state stays
 # visible and identifiable cross-session.
 if [ -f "$indicator_patch" ] && [ -d "$indicator_dir" ]; then
-  if grep -q '^RUNNING_SYMBOL=' "$indicator_dir/scripts/session-dots.sh" 2>/dev/null \
-    && grep -q '^RESET_STYLE=' "$indicator_dir/scripts/session-dots.sh" 2>/dev/null \
-    && grep -q '^DOT_SEPARATOR=' "$indicator_dir/scripts/session-dots.sh" 2>/dev/null \
-    && grep -q '^IDLE_SYMBOLS=' "$indicator_dir/scripts/session-dots.sh" 2>/dev/null \
-    && grep -q 'Associative arrays reject an empty subscript' "$indicator_dir/scripts/session-dots.sh" 2>/dev/null \
-    && grep -q 'Needs-input is acknowledged only when focus returns' "$indicator_dir/scripts/pane-focus-in.sh" 2>/dev/null; then
+  if patch --dry-run --reverse --forward -s -d "$indicator_dir" -p1 < "$indicator_patch" >/dev/null 2>&1; then
     status skip "tmux-agent-indicator session-dot patch already applied"
   elif grep -q '^RUNNING_SYMBOL=' "$indicator_dir/scripts/session-dots.sh" 2>/dev/null \
     && [ -d "$indicator_dir/.git" ] && ! is_dry_run; then
     # Rebase an older copy of this patch onto the plugin before applying the
     # current patch; patch cannot match a file that already contains the old hunks.
-    run git -C "$indicator_dir" checkout -- scripts/session-dots.sh scripts/pane-focus-in.sh
+    run git -C "$indicator_dir" checkout -- scripts/session-dots.sh
     run rm -f "$indicator_dir/scripts/session-dots.sh.orig" "$indicator_dir/scripts/session-dots.sh.rej"
     run_sh "patch -d $(printf '%q' "$indicator_dir") -p1 < $(printf '%q' "$indicator_patch")"
   elif is_dry_run; then
