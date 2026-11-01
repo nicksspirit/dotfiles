@@ -14,6 +14,7 @@
     "npm:pi-prompt-template-model",
     "npm:pi-quiet-tools",
     "npm:pi-subagents",
+    "npm:pi-cli-guard",
     "npm:pi-web-access",
     {
       "source": "npm:@m4riok/pi-ide-bridge",
@@ -32,7 +33,9 @@
   },
   "lastChangelogVersion": "1.4.0",
   "defaultThinkingLevel": "medium",
-  "enabledModels": ["gpt-6-luna"],
+  "enabledModels": [
+    "gpt-6-luna"
+  ],
   "env": {
     "FFF_ENABLE_HOME_SCAN": "0",
     "CLAUDE_CODE_USE_BEDROCK": "1",

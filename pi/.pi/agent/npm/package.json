@@ -14,6 +14,7 @@
     "@m4riok/pi-ide-bridge": "^0.2.0",
     "@narumitw/pi-btw": "^0.63.3",
     "@pi-kaush/pi-welcome-screen": "^0.1.10",
+    "pi-cli-guard": "^0.3.0",
     "pi-context-tools": "^0.1.1",
     "pi-context-view": "^0.8.1",
     "pi-double-esc": "^1.0.14",
