@@ -25,6 +25,8 @@ Put `/run` flags at the **end** of the command, after the task:
 - `--fork` passes the current conversation context. Without it, these agents normally start fresh and need a self-contained task. A fork includes the parent's system prompt, instructions, and skills, so share context deliberately.
 - Combine them as `/run scout Investigate the issue --bg --fork`. Use `/subagents` or `/subagents-fleet` to inspect runs.
 
+For a one-run model override, put `model=provider/model` in brackets immediately after the agent name, and include a task: `/run scout[model=openai/gpt-6.1-terra:low] Find the authentication flow --bg`. The optional `:low` suffix selects the thinking level. This changes neither the agent definition nor the parent model; the chosen provider and model must be available on that machine. Check the run result for the resolved model.
+
 For machine-specific configuration, `PI_CODING_AGENT_DIR` changes the entire Pi configuration directory, not just its agents; ensure the alternate directory also has the needed settings, packages, and credentials. Agent definitions can omit `model` to use the configured subagent default or parent model; `model: inherit` explicitly selects the parent unless a stronger per-agent or per-run override applies. Model resolution and availability depend on each machine's providers and settings; inspect the resolved model before relying on it.
 
 Extension-specific setup and validation details live in each extension's documentation.

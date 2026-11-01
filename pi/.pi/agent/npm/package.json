@@ -13,7 +13,6 @@
     "@juicesharp/rpiv-todo": "^2.11.0",
     "@m4riok/pi-ide-bridge": "^0.2.0",
     "@narumitw/pi-btw": "^0.63.3",
-    "@nguyenquangthai/pi-subtask": "^1.0.1",
     "@pi-kaush/pi-welcome-screen": "^0.1.10",
     "pi-context-tools": "^0.1.1",
     "pi-context-view": "^0.8.1",
