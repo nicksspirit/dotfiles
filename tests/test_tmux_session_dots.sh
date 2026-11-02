@@ -45,6 +45,7 @@ tmux set-environment -g "TMUX_AGENT_PANE_${pane}_STATE" running
 tmux set-option -g @agent-indicator-session-dots-active ''
 tmux set-option -g @agent-indicator-session-dots-running 'WORK ING'
 tmux set-option -g @agent-indicator-session-dots-running-color brightred
+tmux set-option -g @agent-indicator-session-dots-attention-color brightyellow
 tmux set-option -g @agent-indicator-session-dots-separator '|'
 tmux set-option -g @agent-indicator-session-dots-idle '1,2,3'
 tmux set-option -g @agent-indicator-session-dots-reset-style '#[fg=white]'
@@ -62,7 +63,7 @@ output=$(run_dots)
 alert_pane=$(tmux split-window -d -P -F '#{pane_id}' -t beta)
 tmux set-environment -g "TMUX_AGENT_PANE_${alert_pane}_STATE" needs-input
 output=$(run_dots)
-[[ "$output" == '|#[fg=yellow]●#[fg=white]|3' ]] || fail "needs-input priority: $output"
+[[ "$output" == '|#[fg=brightyellow]●#[fg=white]|3' ]] || fail "needs-input priority: $output"
 tmux set-environment -gu "TMUX_AGENT_PANE_${alert_pane}_STATE"
 
 tmux set-environment -g "TMUX_AGENT_PANE_${pane}_STATE" done
@@ -71,7 +72,7 @@ output=$(run_dots)
 tmux set-option -g @agent-indicator-session-dots-attention-states 'blocked,done'
 tmux set-environment -g "TMUX_AGENT_PANE_${pane}_STATE" blocked
 output=$(run_dots)
-[[ "$output" == '|#[fg=yellow]●#[fg=white]|3' ]] || fail "custom attention marker: $output"
+[[ "$output" == '|#[fg=brightyellow]●#[fg=white]|3' ]] || fail "custom attention marker: $output"
 tmux set-environment -gu "TMUX_AGENT_PANE_${pane}_STATE"
 output=$(run_dots)
 [[ "$output" == '|2|3' ]] || fail "idle marker: $output"

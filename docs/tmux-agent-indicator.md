@@ -8,8 +8,11 @@
 - `pi/pi-tmux-agent-indicator/` contains the Stow-managed Pi extension.
 - `pi/.pi/agent/extensions/pi-tmux-agent-indicator.ts` is the deployed extension entrypoint.
 
-The extension is silent when the plugin is absent and does not block Pi while
-calling `agent-state.sh`. The patched dots script reads the configured options
+The extension maps Pi's blocking `ui_prompt_start`/`ui_prompt_end` events to a
+`needs-input` attention marker, restoring the prior running/done state when the
+prompt closes. A normal settled turn is `done`, not `needs-input`. It is silent
+when the plugin is absent and does not block Pi while calling `agent-state.sh`.
+The patched dots script reads the configured options
 in two tmux calls (presence and values) instead of up to two calls per option.
 Pane-state lookups still require one tmux call per tracked pane; custom options
 containing newlines are not supported by the batched value format.
@@ -19,9 +22,10 @@ containing newlines are not supported by the batched value format.
 `tmux/.tmux.conf` overrides Nord's window formats after TPM loads the theme.
 The label inherits `window-status-style` or `window-status-current-style`;
 the arrow separators extract the same style's background color. This lets the
-plugin color the whole tab yellow for `needs-input` or red for `done`, instead
-of leaving Nord's hard-coded grey label inside a colored edge. Pane background
-coloring remains disabled by default.
+plugin color the whole tab bright yellow for `needs-input` or red for `done`, instead
+of leaving Nord's hard-coded grey label inside a colored edge. Tab formats also
+clear tmux's bell/activity reverse-video attribute so the label and arrows retain
+the intended colors. Pane background coloring remains disabled by default.
 
 The plugin restores the window styles when attention is acknowledged or a new
 turn starts. Ordinary inactive tabs use white on grey; the current tab uses

@@ -10,6 +10,8 @@ The extension maps Pi lifecycle events to `agent-state.sh` calls:
 |---|---|
 | `before_agent_start` | `running` |
 | `tool_execution_start` | `running` |
+| `ui_prompt_start` | `needs-input` |
+| `ui_prompt_end` | previous state (`running` or `done`) |
 | `agent_settled` | `done` |
 | `session_shutdown` | `off` |
 
@@ -42,6 +44,4 @@ npm test
 npm run build
 ```
 
-## `needs-input` state
-
-The `needs-input` state is intentionally not mapped. Pi has no direct permission-request lifecycle event that reliably signals a blocked state. Add a mapping here when a concrete Pi extension workflow identifies an attention-needed condition.
+Pi emits `ui_prompt_start` and `ui_prompt_end` around blocking extension UI prompts (such as `ctx.ui.select`, `confirm`, and `input`). The extension marks the pane `needs-input` for the prompt and restores the state it had before the prompt closes. This covers Pi extension dialogs, not the ordinary idle state after an agent turn settles.

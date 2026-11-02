@@ -27,7 +27,7 @@ describe("sendState", () => {
     expect(helper.unrefs).toBe(1);
   });
 
-  it.each(["done", "off"] as const)("passes %s state", (state) => {
+  it.each(["needs-input", "done", "off"] as const)("passes %s state", (state) => {
     const helper = makeSpawnFn();
     sendState(state, "/fake/agent-state.sh", helper.spawnFn);
     expect(helper.calls[0]?.args).toContain(state);
@@ -60,7 +60,7 @@ describe("Pi extension factory", () => {
     expect(handlers).toEqual({});
   });
 
-  it("registers and dispatches all four lifecycle handlers", () => {
+  it("marks blocking UI prompts as needing input and restores the prior state", () => {
     const handlers: Record<string, () => void> = {};
     const pi = { on: (event: string, fn: () => void) => { handlers[event] = fn; } };
     const helper = makeSpawnFn();
@@ -69,16 +69,19 @@ describe("Pi extension factory", () => {
     expect(Object.keys(handlers)).toEqual([
       "before_agent_start",
       "tool_execution_start",
+      "ui_prompt_start",
+      "ui_prompt_end",
       "agent_settled",
       "session_shutdown",
     ]);
     handlers.before_agent_start();
-    handlers.tool_execution_start();
+    handlers.ui_prompt_start();
+    handlers.ui_prompt_end();
     handlers.agent_settled();
     handlers.session_shutdown();
-    expect(Object.keys(handlers)).toHaveLength(4);
     expect(helper.calls.map(({ args }) => args.at(-1))).toEqual([
       "running",
+      "needs-input",
       "running",
       "done",
       "off",

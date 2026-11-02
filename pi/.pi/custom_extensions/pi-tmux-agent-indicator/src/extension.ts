@@ -78,23 +78,42 @@ export default function piTmuxAgentIndicator(
     return;
   }
 
+  let state: AgentState = "done";
+  let promptDepth = 0;
+  let stateBeforePrompt: AgentState = "done";
+  const setState = (next: AgentState) => {
+    state = next;
+    sendState(next, scriptPath, spawnFn);
+  };
+
   // before_agent_start: user submitted a prompt; agent loop is about to start.
   pi.on("before_agent_start", () => {
-    sendState("running", scriptPath, spawnFn);
+    setState("running");
   });
 
   // tool_execution_start: a tool invocation begins inside a running agent turn.
   pi.on("tool_execution_start", () => {
-    sendState("running", scriptPath, spawnFn);
+    setState("running");
+  });
+
+  // Pi emits these for blocking extension UI; restore the prior state when it closes.
+  pi.on("ui_prompt_start", () => {
+    if (promptDepth++ === 0) stateBeforePrompt = state;
+    setState("needs-input");
+  });
+  pi.on("ui_prompt_end", () => {
+    if (promptDepth > 0 && --promptDepth === 0) setState(stateBeforePrompt);
   });
 
   // agent_settled: Pi will not continue running automatically; agent is idle.
   pi.on("agent_settled", () => {
-    sendState("done", scriptPath, spawnFn);
+    promptDepth = 0;
+    setState("done");
   });
 
   // session_shutdown: session is ending; clear indicator.
   pi.on("session_shutdown", () => {
-    sendState("off", scriptPath, spawnFn);
+    promptDepth = 0;
+    setState("off");
   });
 }

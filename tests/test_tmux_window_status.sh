@@ -20,7 +20,7 @@ tmux source-file "$test_dir/tabs.conf"
 assert_tab() {
   local option="$1" bg="$2" fg="$3" format
   format=$(tmux display-message -p -t "$window" "#{E:$option}")
-  [[ "$format" == "#[fg=black,bg=$bg,nobold,noitalics,nounderscore] "* ]] \
+  [[ "$format" == "#[fg=black,bg=$bg,nobold,noitalics,nounderscore,noreverse] "* ]] \
     && { [[ "$format" == *"#[fg=$fg,bg=$bg]"* ]] || [[ "$format" == *"#[bg=$bg,fg=$fg]"* ]]; } \
     && [[ "$format" == *"#[fg=$bg,bg=black,nobold,noitalics,nounderscore]" ]] \
     || { printf 'FAIL: %s should use %s/%s throughout: %s\n' "$option" "$fg" "$bg" "$format" >&2; exit 1; }
@@ -30,7 +30,7 @@ assert_tab window-status-format brightblack white
 assert_tab window-status-current-format cyan black
 
 # These are the window styles agent-state.sh applies for attention states.
-for color in yellow red; do
+for color in brightyellow red; do
   tmux set-window-option -t "$window" window-status-style "bg=$color,fg=black"
   tmux set-window-option -t "$window" window-status-current-style "bg=$color,fg=black"
   assert_tab window-status-format "$color" black
