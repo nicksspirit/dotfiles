@@ -1,7 +1,6 @@
-import type { ExtensionAPI, ExtensionContext, ReadonlyFooterDataProvider, Theme } from "@earendil-works/pi-coding-agent";
+import { CustomEditor, type ExtensionAPI, type ExtensionContext, type ReadonlyFooterDataProvider, type Theme } from "@earendil-works/pi-coding-agent";
 import { Key, matchesKey, sliceByColumn, stripTerminalSequences, Text, truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 
-const WIDGET = "pi-minimal-statusline-identity";
 const MAX_LEN = 80;
 const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 const clean = (text: string) => text.replace(/[\r\n\t]/g, " ").replace(/ +/g, " ").trim();
@@ -243,6 +242,15 @@ export default function piMinimalStatuslineExtension(pi: ExtensionAPI) {
 		ctx.ui.setFooter((tui, theme, data) => {
 			let disposed = false;
 			const unsubscribe = data.onBranchChange(() => tui.requestRender());
+			const previousEditor = ctx.ui.getEditorComponent();
+			// Ordinary widgets follow publication order, so keep the shelf inside the editor.
+			const shelfEditor: NonNullable<typeof previousEditor> = (editorTui, editorTheme, keybindings) => {
+				const editor = previousEditor?.(editorTui, editorTheme, keybindings)
+					?? new CustomEditor(editorTui, editorTheme, keybindings, { embedWorkingStatus: true });
+				const render = editor.render.bind(editor);
+				editor.render = (width) => [...(disposed ? [] : layout(ctx, data, theme, width).shelf), ...render(width)];
+				return editor;
+			};
 			const owner = {
 				ctx, data, theme,
 				render: () => tui.requestRender(),
@@ -250,12 +258,12 @@ export default function piMinimalStatuslineExtension(pi: ExtensionAPI) {
 					if (disposed) return;
 					disposed = true;
 					unsubscribe();
-					ctx.ui.setWidget(WIDGET, undefined);
+					if (ctx.ui.getEditorComponent() === shelfEditor) ctx.ui.setEditorComponent(previousEditor);
 					if (active === owner) active = undefined;
 				},
 			};
 			active = owner;
-			ctx.ui.setWidget(WIDGET, () => ({ render: (width) => layout(ctx, data, theme, width).shelf, invalidate() {} }));
+			ctx.ui.setEditorComponent(shelfEditor);
 			return { render: (width) => layout(ctx, data, theme, width).footer, invalidate() {}, dispose: owner.dispose };
 		});
 	});

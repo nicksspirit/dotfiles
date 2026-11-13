@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { FooterComponent, initTheme, type AgentSession, type ExtensionAPI, type ExtensionContext, type ReadonlyFooterDataProvider, type Theme } from "@earendil-works/pi-coding-agent";
-import { stripTerminalSequences, visibleWidth, type Component } from "@earendil-works/pi-tui";
+import { CustomEditor, FooterComponent, initTheme, type AgentSession, type ExtensionAPI, type ExtensionContext, type KeybindingsManager, type ReadonlyFooterDataProvider, type Theme } from "@earendil-works/pi-coding-agent";
+import { stripTerminalSequences, visibleWidth, type Component, type EditorTheme, type TUI } from "@earendil-works/pi-tui";
 import install, { shortenCwd } from "../extension.js";
 
 describe("shortenCwd", () => {
@@ -41,11 +41,12 @@ initTheme("dark");
 const normalize = (text: string) => unstyle(text).trim().replace(/ +/g, " ");
 const colors: Record<string, string> = { dim: "\x1b[90m", accent: "\x1b[36m", warning: "\x1b[33m", error: "\x1b[31m" };
 const theme = { fg: (color: string, text: string) => `${colors[color] ?? "\x1b[37m"}${text}\x1b[0m` } as Theme;
+type EditorFactory = NonNullable<ReturnType<ExtensionContext["ui"]["getEditorComponent"]>>;
 function usage(input: number, output: number, cacheRead = 0, cost = 0, cacheWrite = 0) {
 	return { input, output, cacheRead, cacheWrite, totalTokens: input + output + cacheRead + cacheWrite, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: cost } };
 }
 
-function harness(flag = "2", mode = "tui") {
+function harness(flag = "2", mode = "tui", previousEditor?: EditorFactory) {
 	type Renderable = Component & { dispose?(): void; handleInput?(data: string): void };
 	const state = {
 		branch: "main", session: "first", leaf: "two", name: undefined as string | undefined,
@@ -71,6 +72,11 @@ function harness(flag = "2", mode = "tui") {
 	} satisfies ReadonlyFooterDataProvider;
 	const tui = { requestRender: vi.fn(), terminal: { rows: 12 } };
 	const widgets = new Map<string, Renderable>([["other-widget", { render: () => ["still here"], invalidate() {} }]]);
+	const editorTheme = { borderColor: (text: string) => text } as EditorTheme;
+	const keybindings = { matches: () => false } as unknown as KeybindingsManager;
+	const defaultEditor = new CustomEditor(tui as unknown as TUI, editorTheme, keybindings);
+	let editor = (previousEditor?.(tui as unknown as TUI, editorTheme, keybindings) ?? defaultEditor) as CustomEditor;
+	let editorFactory = previousEditor;
 	let footer: Renderable | undefined;
 	let overlay: Renderable | undefined;
 	const done = vi.fn();
@@ -81,6 +87,13 @@ function harness(flag = "2", mode = "tui") {
 	};
 	const ui = {
 		notify: vi.fn(),
+		getEditorComponent: () => editorFactory,
+		setEditorComponent: (factory: EditorFactory | undefined) => {
+			const text = editor.getText();
+			editorFactory = factory;
+			editor = (factory?.(tui as unknown as TUI, editorTheme, keybindings) ?? defaultEditor) as CustomEditor;
+			editor.setText(text);
+		},
 		setWidget: (key: string, factory: (() => Renderable) | undefined) => { if (factory) widgets.set(key, factory()); else widgets.delete(key); },
 		setFooter: (factory: (tui: unknown, theme: Theme, data: ReadonlyFooterDataProvider) => Renderable) => { footer?.dispose?.(); footer = factory(tui, theme, data); },
 		custom: async (factory: (tui: unknown, theme: Theme, keys: unknown, done: () => void) => Renderable) => { overlay = factory(tui, theme, {}, done); },
@@ -104,7 +117,9 @@ function harness(flag = "2", mode = "tui") {
 	return {
 		state, statuses, handlers, watchers, unsubscribe, tui, widgets, manager, ctx, ui, data, done,
 		start,
-		shelf: (width = 200) => [...widgets.entries()].find(([key]) => key !== "other-widget")?.[1].render(width) ?? [],
+		shelf: (width = 200) => width > 0 ? editor.render(width).slice(0, -defaultEditor.render(width).length) : [],
+		stack: (width = 200) => [...widgets.values()].flatMap((widget) => widget.render(width)).concat(editor.render(width)),
+		editor: () => editor,
 		footer: (width = 200) => footer?.render(width) ?? [],
 		command: (args: string) => commands.get("statusline")!.handler(args, ctx),
 		overlay: () => overlay!,
@@ -113,6 +128,57 @@ function harness(flag = "2", mode = "tui") {
 }
 
 describe("Split ledger extension", () => {
+	it("keeps the shelf next to input when a todo widget grows or republishes", () => {
+		const h = harness();
+		for (const todos of [["Todos (1/1)", "✓ Replace package"], ["Todos (1/3)", "✓ Replace package", "○ Check config", "○ Verify"]]) {
+			h.ui.setWidget("todos", () => ({ render: () => todos, invalidate() {} }));
+			const stack = h.stack(160).map(normalize);
+			const shelfIndex = stack.findIndex((line) => line.includes("gpt-6-luna"));
+			expect(stack.at(-4)).toContain("gpt-6-luna");
+			expect(stack.indexOf(todos.at(-1)!)).toBe(shelfIndex - 1);
+			expect(stack[shelfIndex + 1]).toMatch(/^─+$/);
+		}
+	});
+
+	it("retains native text editing and submission while the shelf is attached", async () => {
+		const h = harness();
+		const editor = h.editor();
+		const submit = vi.fn();
+		editor.onSubmit = submit;
+		editor.handleInput("draft");
+		editor.handleInput("\x7f");
+		expect(editor.getText()).toBe("draf");
+		await h.command("1");
+		expect(h.editor()).toBe(editor);
+		expect(editor.getText()).toBe("draf");
+		editor.handleInput("\r");
+		expect(submit).toHaveBeenCalledWith("draf");
+	});
+
+	it("wraps an existing editor factory and restores it on disposal", () => {
+		const escape = vi.fn();
+		const previous: EditorFactory = (tui, theme, keys) => {
+			const editor = new CustomEditor(tui, theme, keys);
+			editor.onEscape = escape;
+			return editor;
+		};
+		const h = harness("2", "tui", previous);
+		expect(h.editor().onEscape).toBe(escape);
+		h.editor().setText("keep this draft");
+		h.dispose();
+		expect(h.ui.getEditorComponent()).toBe(previous);
+		expect(h.editor().getText()).toBe("keep this draft");
+		expect(h.shelf()).toEqual([]);
+	});
+
+	it("leaves a later editor replacement in place when the footer is disposed", () => {
+		const h = harness();
+		const replacement: EditorFactory = (tui, theme, keys) => new CustomEditor(tui, theme, keys);
+		h.ui.setEditorComponent(replacement);
+		h.dispose();
+		expect(h.ui.getEditorComponent()).toBe(replacement);
+	});
+
 	it("places location/model above the editor and native usage below, with complete keyed statuses", () => {
 		const h = harness();
 		expect(h.shelf().map(normalize)).toEqual(["/v/www/dotfiles (main) (openai) gpt-6-luna • medium"]);
@@ -225,7 +291,7 @@ describe("Split ledger extension", () => {
 		expect(h.shelf(40).length + h.footer(40).length).toBe(5);
 	});
 
-	it("refreshes branch/model/session state and disposes only its own widget and subscription", () => {
+	it("refreshes branch/model/session state and disposes only its own editor and subscription", () => {
 		const h = harness();
 		h.state.branch = "next"; h.state.name = "named session";
 		h.ctx.model!.id = "another-model";
