@@ -169,6 +169,47 @@ if ((${#apt_targets[@]} || ${#apt_reinstall_targets[@]})); then
   fi
 fi
 
+if registry_hook_selected setup-tools:docker; then
+  log "Docker Engine"
+  if ! is_dry_run; then
+    . /etc/os-release
+    [[ ${ID:-} == debian && ${VERSION_CODENAME:-} == trixie && $(dpkg --print-architecture) == amd64 ]] ||
+      die "Docker setup requires Debian trixie on amd64"
+  fi
+  registry_load_unit docker
+  docker_packages=("${REGISTRY_INSTALL_NAMES[@]}")
+  run sudo install -m 0755 -d /etc/apt/keyrings
+  if is_dry_run; then
+    status plan 'download Docker signing key and install /etc/apt/keyrings/docker.asc'
+    status plan 'write Docker Debian trixie amd64 repository to /etc/apt/sources.list.d/docker.sources'
+  else
+    make_temp_dir setup-docker docker_tmp
+    curl -fsSL https://download.docker.com/linux/debian/gpg -o "$docker_tmp/docker.asc"
+    run sudo install -m 0644 "$docker_tmp/docker.asc" /etc/apt/keyrings/docker.asc
+    cat > "$docker_tmp/docker.sources" <<'EOF'
+Types: deb
+URIs: https://download.docker.com/linux/debian
+Suites: trixie
+Components: stable
+Architectures: amd64
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+    run sudo install -m 0644 "$docker_tmp/docker.sources" /etc/apt/sources.list.d/docker.sources
+  fi
+  run sudo apt-get update
+  if [[ " ${BOOTSTRAP_REINSTALL_PACKAGES:-} " == *' docker '* ]]; then
+    run sudo apt-get install -y --reinstall "${docker_packages[@]}"
+  else
+    run sudo apt-get install -y "${docker_packages[@]}"
+  fi
+  run sudo systemctl enable --now docker containerd
+  run sudo systemctl status docker --no-pager
+  run sudo docker compose version
+  docker_user="$(id -un)"
+  run sudo usermod -aG docker "$docker_user"
+  status skip 'Reconnect to apply docker group membership, then run docker run --rm hello-world. The docker group grants root-level access.'
+fi
+
 log "github release installs"
 if ((${#GITHUB_INSTALLS[@]})); then
   run mkdir -p "$HOME/.local/bin" "$HOME/.local/opt"

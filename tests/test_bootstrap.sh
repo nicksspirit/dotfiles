@@ -39,9 +39,21 @@ test_default_baseline() {
 
   # Assert
   [[ "$output" == *"$baseline"* ]] || { printf 'missing baseline\n' >&2; return 1; }
-  for unexpected in 'npiperelay' '1password' 'network-manager' 'net-tools' 'stow -nv' '==> WSL' '==> micro plugins' 'openssh-server' '==> SSH server' '==> Linux laptop'; do
+  for unexpected in 'npiperelay' '1password' 'network-manager' 'net-tools' 'stow -nv' '==> WSL' '==> micro plugins' 'openssh-server' '==> SSH server' '==> Linux laptop' '==> Docker Engine'; do
     [[ "$output" != *"$unexpected"* ]] || { printf 'unexpected: %s\n' "$unexpected" >&2; return 1; }
   done
+}
+
+test_docker_opt_in() {
+  local output
+  output="$("$repo_root/bootstrap.sh" --dry-run -p docker)"
+  [[ "$output" == *'Docker Debian trixie amd64 repository'* &&
+     "$output" == *'docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin'* &&
+     "$output" == *'sudo systemctl enable --now docker containerd'* &&
+     "$output" != *'sudo docker run --rm hello-world'* &&
+     "$output" == *'sudo docker compose version'* && "$output" == *'sudo usermod -aG docker'* ]] || {
+    printf 'Docker installation plan is incomplete\n' >&2; return 1;
+  }
 }
 
 test_wsl_opt_in() {
@@ -305,6 +317,7 @@ test_removed_prerequisite_id() {
 
 test_setup_scripts_are_executable
 test_default_baseline
+test_docker_opt_in
 test_wsl_opt_in
 test_ssh_server_opt_in
 test_linux_laptop_opt_in

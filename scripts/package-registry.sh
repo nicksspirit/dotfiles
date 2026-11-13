@@ -33,6 +33,7 @@ REGISTRY_UNIT_IDS=(
   wsl
   ssh-server
   linux-laptop
+  docker
   bash
   git
   curl
@@ -134,6 +135,12 @@ registry_load_unit() {
   linux-laptop)
     REGISTRY_ID=linux-laptop
     REGISTRY_SETUP_HOOK=setup-linux-laptop
+    ;;
+
+  docker)
+    REGISTRY_ID=docker
+    REGISTRY_INSTALL_NAMES=(docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin)
+    REGISTRY_SETUP_HOOK=setup-tools:docker
     ;;
 
   # Stow-only unit: no installer metadata is needed.
