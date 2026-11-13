@@ -8,7 +8,7 @@
 !/agents/scout.md
 !/extensions/
 /extensions/*
-!/extensions/pi-minimal-statusline.disable
+!/extensions/pi-minimal-statusline.ts
 !/extensions/pi-model-filter.ts
 !/extensions/pi-tmux-agent-indicator.ts
 !/model-filter.json

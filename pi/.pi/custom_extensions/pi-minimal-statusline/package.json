@@ -1,7 +1,7 @@
 {
   "name": "pi-minimal-statusline",
   "version": "0.1.0",
-  "description": "Minimal Pi footer replacement that shortens the working-directory line; keeps the stats/cost/model line in the same format as Pi's stock footer.",
+  "description": "Split ledger Pi statusline: identity above the editor, native usage below, and live delimited extension statuses.",
   "author": "nmuoh",
   "license": "Unlicense",
   "keywords": [
@@ -20,7 +20,8 @@
     "README.md"
   ],
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": ">=0.74.0"
+    "@earendil-works/pi-coding-agent": ">=1.5.0",
+    "@earendil-works/pi-tui": ">=1.5.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

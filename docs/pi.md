@@ -6,7 +6,24 @@ The `pi` package stows `~/.pi/agent` configuration and extensions, including the
 
 - **Model filter:** Configuration locations, rule precedence, and examples are documented in [`pi-model-filter`](../pi/.pi/custom_extensions/pi-model-filter/README.md).
 - **tmux agent indicator:** Maps Pi lifecycle events to `tmux-agent-indicator`; inactive if that plugin is absent.
-- **Working-directory footer:** `cwd-shortener.ts` keeps the current directory and its parent readable, abbreviates earlier path segments, and caps the line at 80 characters. It rebuilds the status line using Pi's public extension API.
+- **Split ledger statusline:** `pi-minimal-statusline.ts` loads the local extension that places directory/branch and model identity above the editor, native usage below it, and third-party status entries on additional rows.
+
+## Split ledger statusline
+
+The statusline requires Pi and `@earendil-works/pi-tui` 1.5.0 or newer. Its default two core rows follow the Split ledger prototype. The shelf above the editor places directory, branch, and optional session name on the left and provider/model/thinking effort on the right. Below the editor, token/cache counters sit on the left with cost and context usage aligned right. It uses Pi's current theme and leaves tmux's Nord configuration unchanged.
+
+Pi's native `↑`, `↓`, `R`, `W`, `CH`, `$`, `(sub)`, `%/window`, `(auto)`, and model/effort notation are retained. Subscription markers use OAuth and provider subscription metadata, with Pi's explicit Kimi Coding exception. Compaction state comes from Pi's effective settings. Usage totals include assistant messages, tool usage, summaries, compactions, and explicit usage entries across the whole session.
+
+Extension statuses are read from Pi's live status map on every render and sorted by key. A dim `  │  ` separates entries on the same row. Each entry keeps its own text and ANSI colors. Extmgr's package/scheduler summary remains one entry, and ponytail's activity circle stays with its mode. New keys appear automatically, updates replace values, and empty or cleared entries leave no separator. Whole entries move to a new row when they do not fit. Oversized entries wrap with Pi's ANSI-aware helpers.
+
+- `--statusline-lines 1|2|3` selects the core row count at launch and defaults to `2`.
+- `/statusline 1`, `/statusline 2`, and `/statusline 3` change it until reload or exit. The row count includes the shelf above the editor. Extension rows are additional.
+- One core row combines usage/model/context below the editor and includes location when space permits. Three core rows separate location, model, and usage.
+- `/statusline details` opens the complete values in a full-width, scrollable overlay. Scroll with arrows, Page Up/Down, or Home/End, then press Escape or Enter to close.
+
+Narrow panes remove the optional provider prefix, abbreviate the path, and show explicit ellipses for omitted core fields. Context and model identity take precedence in compact mode. The details view retains the full values. The extension uses its own named widget so other editor widgets can coexist. Another extension that calls `setFooter()` replaces this footer; ordinary `setStatus()` publishers coexist.
+
+Validate from `pi/.pi/custom_extensions/pi-minimal-statusline` with `npm run typecheck`, `npm test`, and `npm run build`. The focused tests compare usage output against Pi's stock footer and cover live status-map changes, Unicode/ANSI wrapping, widths, row counts, lifecycle cleanup, and the details view. After changing dependency selection, also run `bash tests/test_bootstrap.sh` from the repository root. Verify the candidate in a separate tmux session before deploying it; inspect existing home-directory targets and preview Stow changes first.
 
 ## Background subagents
 
