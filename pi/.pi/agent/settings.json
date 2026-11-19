@@ -16,12 +16,6 @@
     "npm:pi-subagents",
     "npm:pi-cli-guard",
     "npm:pi-web-access",
-    {
-      "source": "npm:@m4riok/pi-ide-bridge",
-      "extensions": [
-        "-index.ts"
-      ]
-    },
     "git:github.com/DietrichGebert/ponytail",
     "npm:pi-extension-manager"
   ],
