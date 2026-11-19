@@ -455,6 +455,18 @@ for entry in "${INSTALLER_TOOLS[@]-}"; do
   fi
 done
 
+## [bash-autosuggestions]
+if registry_hook_selected setup-tools:bash-autosuggestions; then
+  if should_reinstall_tools bash-autosuggestions || [ ! -f "$HOME/.local/lib/bash-autosuggestions/bash-autosuggestions.so" ]; then
+    make_temp_dir setup-bash-autosuggestions tmp_dir
+    run git clone https://github.com/wallentx/bash-autosuggestions.git "$tmp_dir/source"
+    run git -C "$tmp_dir/source" checkout d663277e5cb37259f49f69fa7455cc21946f4d39
+    run make -C "$tmp_dir/source" install "PREFIX=$HOME/.local" BASHRC_UPDATE=no
+  else
+    status skip "bash-autosuggestions already installed"
+  fi
+fi
+
 ## [fzf]
 # Installed via git clone + bundled install script (not a pipe-to-sh installer).
 if registry_hook_selected setup-tools:fzf; then

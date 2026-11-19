@@ -35,6 +35,7 @@ REGISTRY_UNIT_IDS=(
   linux-laptop
   docker
   bash
+  bash-autosuggestions
   git
   curl
   bat
@@ -150,6 +151,14 @@ registry_load_unit() {
     REGISTRY_INSTALL_METHOD=apt
     REGISTRY_INSTALL_NAMES=(bash)
     REGISTRY_STOW_PACKAGE=bash
+    ;;
+
+  bash-autosuggestions)
+    REGISTRY_ID=bash-autosuggestions
+    REGISTRY_COMMAND=bash-autosuggestions
+    REGISTRY_APT_DEPENDENCIES=(git build-essential bash-builtins libreadline-dev)
+    REGISTRY_PACKAGE_DEPENDENCIES=(bash)
+    REGISTRY_SETUP_HOOK=setup-tools:bash-autosuggestions
     ;;
 
   git)

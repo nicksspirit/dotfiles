@@ -160,6 +160,9 @@ fi
 #
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
+# bash-autosuggestions
+[ -f "$HOME/.local/lib/bash-autosuggestions/bash-autosuggestions.bash" ] && source "$HOME/.local/lib/bash-autosuggestions/bash-autosuggestions.bash"
+
 #
 # zoxide
 #

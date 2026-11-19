@@ -9,6 +9,7 @@ The `bash` package manages `~/.bashrc` and `~/.bash_aliases`.
 - `~/.bash_aliases` defines `bat`, `bathelp`, and a `help()` function that formats command help with `batcat`.
 - `claude-usage` runs the current Claude usage tracker; tracker options such as `--today`, `--month current`, and `--budget` are passed through to the script.
 - Starship, fzf, zoxide, and fnm initialize only when their commands or startup files are available.
+- Bash autosuggestions loads from `~/.local/lib/bash-autosuggestions` when installed. Select `bash-autosuggestions` in bootstrap to build the pinned plugin with its Bash and Readline development dependencies; `scripts/setup-tools.sh` owns installation. Suggestions come from command history and can be accepted with the right arrow.
 - `browser` supplies the `BROWSER` command for applications that open URLs, including `gh auth login`.
 - Optional integrations initialize only when their commands or files exist; no host-specific home, Windows, or temporary-directory paths are assumed.
 - The keychain startup block is disabled. A 1Password SSH agent bridge is sourced only when `~/.1password/agent-bridge.sh` exists.

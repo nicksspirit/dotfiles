@@ -315,6 +315,17 @@ test_removed_prerequisite_id() {
   }
 }
 
+test_bash_autosuggestions() {
+  local output
+  output="$("$repo_root/bootstrap.sh" --dry-run -p bash-autosuggestions)"
+  [[ "$output" == *bash-builtins* && "$output" == *libreadline-dev* &&
+     "$output" == *'github.com/wallentx/bash-autosuggestions.git'* &&
+     "$output" == *'BASHRC_UPDATE=no'* && "$output" == *'stow -nv bash'* ]] || {
+    printf 'Bash autosuggestions installation plan is incomplete\n' >&2; return 1;
+  }
+}
+
+test_bash_autosuggestions
 test_setup_scripts_are_executable
 test_default_baseline
 test_docker_opt_in
