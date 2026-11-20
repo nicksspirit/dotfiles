@@ -32,6 +32,8 @@ REGISTRY_UNIT_IDS=(
   fastfetch
   wsl
   ssh-server
+  ufw
+  caddy
   linux-laptop
   docker
   bash
@@ -131,6 +133,18 @@ registry_load_unit() {
     REGISTRY_INSTALL_METHOD=apt
     REGISTRY_INSTALL_NAMES=(openssh-server)
     REGISTRY_SETUP_HOOK=setup-ssh-server
+    ;;
+
+  ufw)
+    REGISTRY_ID=ufw
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(ufw)
+    ;;
+
+  caddy)
+    REGISTRY_ID=caddy
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(caddy)
     ;;
 
   linux-laptop)

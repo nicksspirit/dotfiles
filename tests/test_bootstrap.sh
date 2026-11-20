@@ -39,7 +39,7 @@ test_default_baseline() {
 
   # Assert
   [[ "$output" == *"$baseline"* ]] || { printf 'missing baseline\n' >&2; return 1; }
-  for unexpected in 'npiperelay' '1password' 'network-manager' 'net-tools' 'stow -nv' '==> WSL' '==> micro plugins' 'openssh-server' '==> SSH server' '==> Linux laptop' '==> Docker Engine'; do
+  for unexpected in 'npiperelay' '1password' 'network-manager' 'net-tools' 'stow -nv' '==> WSL' '==> micro plugins' 'openssh-server' '==> SSH server' 'ufw' 'Configure UFW' 'caddy' '==> Linux laptop' '==> Docker Engine'; do
     [[ "$output" != *"$unexpected"* ]] || { printf 'unexpected: %s\n' "$unexpected" >&2; return 1; }
   done
 }
@@ -81,6 +81,24 @@ test_ssh_server_opt_in() {
      "$output" == *'StreamLocalBindUnlink yes'* && "$output" == *'StreamLocalBindMask 0177'* &&
      "$output" == *'sudo /usr/sbin/sshd -t'* && "$output" != *'stow -nv'* ]] || {
     printf 'SSH server install or configuration hook missing\n' >&2; return 1;
+  }
+}
+
+test_ufw_opt_in() {
+  local output
+  output="$("$repo_root/bootstrap.sh" --dry-run -p ufw)"
+  [[ "$output" == *'sudo apt-get install -y ufw '* &&
+     "$output" == *'Bootstrap complete'*'Configure UFW for this host manually'* &&
+     "$output" != *'sudo ufw '* ]] || {
+    printf 'UFW should install and print guidance without running firewall commands\n' >&2; return 1;
+  }
+}
+
+test_caddy_opt_in() {
+  local output
+  output="$("$repo_root/bootstrap.sh" --dry-run -p caddy)"
+  [[ "$output" == *'sudo apt-get install -y caddy '* && "$output" != *'stow -nv'* ]] || {
+    printf 'Caddy should install from apt without deploying configuration\n' >&2; return 1;
   }
 }
 
@@ -331,6 +349,8 @@ test_default_baseline
 test_docker_opt_in
 test_wsl_opt_in
 test_ssh_server_opt_in
+test_ufw_opt_in
+test_caddy_opt_in
 test_linux_laptop_opt_in
 test_1password_dependencies
 test_transitive_dependencies

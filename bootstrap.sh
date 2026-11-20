@@ -178,3 +178,6 @@ for script in "${scripts[@]}"; do
 done
 
 log "Bootstrap complete"
+if bootstrap_package_selected ufw; then
+  status todo "Configure UFW for this host manually. If using SSH, allow its port from your management network before enabling UFW, then test a second login before closing this session. See docs/ufw.md."
+fi

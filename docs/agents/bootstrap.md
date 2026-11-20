@@ -28,6 +28,8 @@ Select `ssh-server` explicitly on remote Debian hosts to install OpenSSH and run
 drop-in, validates syntax and effective settings with rollback on validation failure,
 and reloads an active `ssh` service. See [`ssh-server.md`](../ssh-server.md).
 
+Firewall: select `ufw` to install it and print a reminder; use the [UFW recipe](../ufw.md) to configure access without losing SSH. Reverse proxy: select `caddy` to install it; use the [Caddy recipe](../caddy.md) to choose TLS and apply a site. Web console: use the [Cockpit recipes](../cockpit.md) to choose SSH tunnel, LAN HTTPS through Caddy, or direct HTTPS before selecting packages. Cockpit is installed separately.
+
 Select `linux-laptop` explicitly for Linux laptops used as always-on servers.
 Its `setup-linux-laptop.sh` hook ignores lid and idle sleep in logind and masks
 systemd sleep targets. It supports standalone dry runs and does not reboot or
