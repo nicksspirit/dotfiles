@@ -35,6 +35,7 @@ REGISTRY_UNIT_IDS=(
   ufw
   caddy
   linux-laptop
+  tailscale
   docker
   bash
   bash-autosuggestions
@@ -150,6 +151,14 @@ registry_load_unit() {
   linux-laptop)
     REGISTRY_ID=linux-laptop
     REGISTRY_SETUP_HOOK=setup-linux-laptop
+    ;;
+
+  tailscale)
+    REGISTRY_ID=tailscale
+    REGISTRY_INSTALL_METHOD=installer
+    REGISTRY_COMMAND=tailscale
+    REGISTRY_URL=https://tailscale.com/install.sh
+    REGISTRY_INSTALL_SHELL=sh
     ;;
 
   docker)
