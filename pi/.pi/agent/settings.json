@@ -25,7 +25,7 @@
     "cloudUrl": "https://ollama.com",
     "apiKey": "ollama"
   },
-  "lastChangelogVersion": "1.5.2",
+  "lastChangelogVersion": "1.6.1",
   "defaultThinkingLevel": "medium",
   "enabledModels": [
     "gpt-6-luna"
@@ -41,12 +41,12 @@
   "tuiMode": "fullscreen",
   "deviceId": "279e20cf-e9b2-4c94-a83d-b3f65e0b241b",
   "extensionChangelogVersions": {
-    "{\"source\":\"npm:@narumitw/pi-btw\",\"scope\":\"user\"}": "0.63.8",
+    "{\"source\":\"npm:@narumitw/pi-btw\",\"scope\":\"user\"}": "0.63.9",
     "{\"source\":\"npm:@pi-kaush/pi-welcome-screen@latest\",\"scope\":\"user\"}": "0.1.13",
     "{\"source\":\"npm:pi-context-tools\",\"scope\":\"user\"}": "0.1.1",
     "{\"source\":\"npm:pi-context-view\",\"scope\":\"user\"}": "0.8.4",
     "{\"source\":\"npm:pi-prompt-template-model\",\"scope\":\"user\"}": "0.12.3",
-    "{\"source\":\"npm:pi-subagents\",\"scope\":\"user\"}": "0.89.1",
+    "{\"source\":\"npm:pi-subagents\",\"scope\":\"user\"}": "0.90.0",
     "{\"source\":\"npm:pi-web-access\",\"scope\":\"user\"}": "0.48.0",
     "{\"source\":\"npm:pi-extmgr\",\"scope\":\"user\"}": "0.4.2"
   }
