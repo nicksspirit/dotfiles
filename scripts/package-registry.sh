@@ -43,6 +43,7 @@ REGISTRY_UNIT_IDS=(
   curl
   bat
   jq
+  adb
   yq
   fzf
   fd
@@ -208,6 +209,12 @@ registry_load_unit() {
     REGISTRY_ID=jq
     REGISTRY_INSTALL_METHOD=apt
     REGISTRY_INSTALL_NAMES=(jq)
+    ;;
+
+  adb)
+    REGISTRY_ID=adb
+    REGISTRY_INSTALL_METHOD=apt
+    REGISTRY_INSTALL_NAMES=(adb)
     ;;
 
   yq)
