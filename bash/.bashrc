@@ -173,6 +173,13 @@ fi
 #
 # SSH
 #
+# Follow the stowed .bashrc so a pull also picks up newly added package files.
+bashrc_path=$(readlink -f -- "${BASH_SOURCE[0]}")
+if [ -r "${bashrc_path%/*}/.config/ssh-transfer/functions.sh" ]; then
+  . "${bashrc_path%/*}/.config/ssh-transfer/functions.sh"
+fi
+unset bashrc_path
+
 # if command -v keychain >/dev/null 2>&1; then
 #      # Clear out any dead lock files left over from a wsl --shutdown
 #     rm -f "$HOME/.keychain/"*-lockf 2>/dev/null
